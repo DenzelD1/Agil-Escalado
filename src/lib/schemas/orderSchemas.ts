@@ -6,6 +6,17 @@ import { z } from 'zod';
 export const CanalSchema = z.enum(['web', 'app', 'call_center']);
 export type Canal = z.infer<typeof CanalSchema>;
 
+export const OrderStatusSchema = z.enum([
+  'creado',
+  'verificado',
+  'pagado',
+  'listo_para_despacho',
+  'entregado',
+  'rechazado',
+  'cancelado',
+]);
+export type OrderStatus = z.infer<typeof OrderStatusSchema>;
+
 // ---------------------------------------------------------------------------
 // Cliente
 // Transforma: email → lowercase, nombre/telefono → trim
@@ -116,7 +127,7 @@ export const OrderSchema = z.object({
     .min(0, 'El total no puede ser negativo')
     .transform((val) => Math.round(val * 100) / 100),
   /** Estado inicial siempre es "creado"; se sobreescribe en normalización */
-  estado: z.string().default('creado'),
+  estado: OrderStatusSchema.default('creado'),
 });
 
 export type OrderType = z.infer<typeof OrderSchema>;

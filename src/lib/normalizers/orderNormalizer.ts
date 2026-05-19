@@ -3,6 +3,7 @@ import { type Canal, type OrderType } from '@/lib/schemas/orderSchemas';
 import { normalizeClient } from '@/lib/normalizers/clientNormalizer';
 import { normalizeAddress } from '@/lib/normalizers/addressNormalizer';
 import { normalizeItems } from '@/lib/normalizers/skuNormalizer';
+import { initialOrderState } from '../machines/orderStateMachine';
 
 /**
  * Errores de normalización estructurados para devolver en las respuestas HTTP.
@@ -132,7 +133,7 @@ export function normalizeOrder(
     subtotal,
     impuestos,
     total,
-    estado: 'creado',
+    estado: initialOrderState,
   };
 }
 
