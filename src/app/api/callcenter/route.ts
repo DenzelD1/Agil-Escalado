@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { verifyJwt } from '@/lib/jwt';
 import { safeNormalizeOrder } from '@/lib/normalizers/orderNormalizer';
+import { getOrderStateTransition } from '@/lib/machines/orderStateManager';
+import { initialOrderState } from '@/lib/machines/orderStateMachine';
 
 /**
  * POST /api/callcenter
@@ -72,14 +74,27 @@ export async function POST(request: Request) {
     const normResult = safeNormalizeOrder(bodyConEmailFallback, 'call_center');
 
     if (!normResult.success) {
+      // Transicion: creado -> rechazado (validacion fallida)
+      const stateTransition = getOrderStateTransition(initialOrderState, {
+        type: 'VALIDACION_FALLIDA',
+        error: `Validación rechazada: ${normResult.errors.map((e) => e.mensaje).join('; ')}`,
+      });
+
       return NextResponse.json(
         {
           error: 'Error de validación y normalización de datos',
           errores: normResult.errors,
+          estado: stateTransition.nextState,
+          transicion: stateTransition.message,
         },
         { status: 400 },
       );
     }
+
+    // Transicion: creado -> verificado (validacion exitosa)
+    const stateTransition = getOrderStateTransition(initialOrderState, {
+      type: 'VALIDACION_EXITOSA',
+    });
 
     const pedidoNormalizado = normResult.data;
     const agenteId =
@@ -90,7 +105,12 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         mensaje: 'Pedido Call Center recibido y normalizado. Stock en verificación asíncrona.',
-        pedido: pedidoNormalizado,
+        pedido: {
+          ...pedidoNormalizado,
+          estado: stateTransition.nextState,
+        },
+        estado: stateTransition.nextState,
+        transicion: stateTransition.message,
         agente_id: agenteId,
       },
       { status: 201 },
