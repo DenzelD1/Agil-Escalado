@@ -10,4 +10,54 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Order {
+  id              String   @id @default(uuid())
+  idCanal         String
+  tipoCanal       String
+  clienteId       String
+  direccionId     String
+  subtotal        Float
+  impuestos       Float
+  total           Float
+  estado          String
+  prioridad       String   @default("media")
+  recibidoEn      DateTime @default(now())
+
+  cliente         Client   @relation(fields: [clienteId], references: [id])
+  direccionEnvio  Address  @relation(fields: [direccionId], references: [id])
+  items           Item[]
+}
+
+model Client {
+  id       String  @id @default(uuid())
+  nombre   String
+  email    String
+  telefono String?
+  orders   Order[]
+}
+
+model Address {
+  id               String  @id @default(uuid())
+  calle            String
+  numero           String
+  ciudad           String
+  region           String?
+  codigoPostal     String?
+  pais             String  @default("Chile")
+  notasAdicionales String?
+  orders           Order[]
+}
+
+model Item {
+  id             String @id @default(uuid())
+  orderId        String
+  sku            String
+  cantidad       Int
+  precioUnitario Float
+  descuento      Float  @default(0)
+
+  order          Order  @relation(fields: [orderId], references: [id])
 }

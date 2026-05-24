@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { type Canal, type OrderType } from '@/lib/schemas/orderSchemas';
+import { type Canal, type OrderType, PrioridadSchema } from '@/lib/schemas/orderSchemas';
 import { normalizeClient } from '@/lib/normalizers/clientNormalizer';
 import { normalizeAddress } from '@/lib/normalizers/addressNormalizer';
 import { normalizeItems } from '@/lib/normalizers/skuNormalizer';
@@ -122,6 +122,11 @@ export function normalizeOrder(
   const id_pedido = crypto.randomUUID();
   const recibido_en = new Date().toISOString();
 
+  // Extraer prioridad y validar o usar default
+  const rawPrioridad = body.prioridad ?? body.priority ?? 'media';
+  const parsedPrioridad = PrioridadSchema.safeParse(rawPrioridad);
+  const prioridad = parsedPrioridad.success ? parsedPrioridad.data : 'media';
+
   return {
     id_pedido,
     recibido_en,
@@ -134,6 +139,7 @@ export function normalizeOrder(
     impuestos,
     total,
     estado: initialOrderState,
+    prioridad,
   };
 }
 

@@ -110,6 +110,30 @@ Authorization: Bearer <token>
 
 ---
 
+## Flujo y Lógica de Procesamiento de Pedidos
+
+El sistema actúa como el **orquestador central** del ciclo de vida de los pedidos. Su flujo lógico se divide en pasos síncronos (ingesta) y asíncronos (integración por eventos):
+
+1. **Ingesta (`CREADO`)**: Los canales envían el pedido bruto. Se genera un ID interno, se aplican reglas de negocio y se normaliza el formato al esquema canónico estricto.
+2. **Verificación Síncrona (`VERIFICADO` o `RECHAZADO`)**: Se valida la integridad estructural con Zod. Luego, se consulta síncronamente a la API de Inventario (Proyecto 5) para reservar el stock.
+   - Si todo es correcto ➔ estado `VERIFICADO`.
+   - Si los datos son inválidos o falta stock ➔ estado `RECHAZADO`.
+3. **Integración de Pagos (Asíncrono) (`PAGADO`)**: Un pedido `VERIFICADO` habilita el pago (Proyecto 4). Se espera recibir un **webhook** externo con el resultado para marcarlo como `PAGADO` (o rechazarlo y liberar stock).
+4. **Despacho y Logística (`LISTO_PARA_DESPACHO` ➔ `ENTREGADO`)**: Exclusivamente los pedidos con estado `PAGADO` se transfieren al operador logístico (Proyecto 2). Un último webhook confirma el estado final `ENTREGADO`.
+
+```mermaid
+stateDiagram-v2
+    [*] --> CREADO : Recepción de Canal
+    CREADO --> RECHAZADO : Validación / Stock Fallido
+    CREADO --> VERIFICADO : Datos Correctos y Stock Reservado
+    VERIFICADO --> PAGADO : Webhook de Pago Exitoso
+    VERIFICADO --> RECHAZADO : Webhook de Pago Fallido
+    PAGADO --> LISTO_PARA_DESPACHO : Se envía orden de envío
+    LISTO_PARA_DESPACHO --> ENTREGADO : Webhook Logístico
+```
+
+---
+
 ## Normalización de datos
 
 La capa de normalización resuelve las diferencias de formato entre canales y aplica transformaciones estándar:

@@ -6,6 +6,9 @@ import { z } from 'zod';
 export const CanalSchema = z.enum(['web', 'app', 'call_center']);
 export type Canal = z.infer<typeof CanalSchema>;
 
+export const PrioridadSchema = z.enum(['alta', 'media', 'baja']);
+export type Prioridad = z.infer<typeof PrioridadSchema>;
+
 export const OrderStatusSchema = z.enum([
   'creado',
   'verificado',
@@ -128,6 +131,7 @@ export const OrderSchema = z.object({
     .transform((val) => Math.round(val * 100) / 100),
   /** Estado inicial siempre es "creado"; se sobreescribe en normalización */
   estado: OrderStatusSchema.default('creado'),
+  prioridad: PrioridadSchema.default('media'),
 });
 
 export type OrderType = z.infer<typeof OrderSchema>;
