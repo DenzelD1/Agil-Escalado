@@ -3,6 +3,7 @@ import { verifyJwt } from '@/lib/jwt';
 import { safeNormalizeOrder } from '@/lib/normalizers/orderNormalizer';
 import { getOrderStateTransition } from '@/lib/machines/orderStateManager';
 import { initialOrderState } from '@/lib/machines/orderStateMachine';
+import { reserveStock } from '@/lib/services/stockService';
 
 /**
  * POST /api/callcenter
@@ -12,8 +13,7 @@ import { initialOrderState } from '@/lib/machines/orderStateMachine';
  * Diferencias respecto a web/app:
  *  - El email del cliente es OPCIONAL (el agente puede no tenerlo)
  *  - Se requiere el ID del agente que tomó el pedido (campo: agente_id)
- *  - No hay verificación de stock en tiempo real (el agente ya lo confirmó)
- *    → el stock se verifica de forma asíncrona posteriormente
+ *  - La reserva de stock se realiza automáticamente al crear el pedido
  */
 export async function POST(request: Request) {
   try {
@@ -92,7 +92,7 @@ export async function POST(request: Request) {
     }
 
     // Transicion: creado -> verificado (validacion exitosa)
-    const stateTransition = getOrderStateTransition(initialOrderState, {
+    let stateTransition = getOrderStateTransition(initialOrderState, {
       type: 'VALIDACION_EXITOSA',
     });
 
@@ -102,16 +102,41 @@ export async function POST(request: Request) {
       (body.agenteId as string) ??
       (body.agent_id as string);
 
+    // --- Reserva automática de stock ---
+    const stockResult = await reserveStock(pedidoNormalizado.items, token);
+
+    if (!stockResult.success) {
+      // Transicion: verificado -> rechazado (stock insuficiente)
+      stateTransition = getOrderStateTransition(stateTransition.nextState, {
+        type: 'VALIDACION_FALLIDA',
+        error: stockResult.error,
+      });
+
+      const statusCode =
+        stockResult.tipo === 'stock_insuficiente' ? 409 : 503;
+      return NextResponse.json(
+        {
+          error: stockResult.error,
+          sku: stockResult.sku,
+          tipo: stockResult.tipo,
+          estado: stateTransition.nextState,
+          transicion: stateTransition.message,
+        },
+        { status: statusCode },
+      );
+    }
+
     return NextResponse.json(
       {
-        mensaje: 'Pedido Call Center recibido y normalizado. Stock en verificación asíncrona.',
+        mensaje: 'Pedido Call Center recibido, normalizado y stock reservado',
         pedido: {
           ...pedidoNormalizado,
           estado: stateTransition.nextState,
         },
+        agente_id: agenteId,
+        reservas: stockResult.reservas,
         estado: stateTransition.nextState,
         transicion: stateTransition.message,
-        agente_id: agenteId,
       },
       { status: 201 },
     );

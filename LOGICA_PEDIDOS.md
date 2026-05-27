@@ -32,11 +32,13 @@ src/
     ├── jwt.ts                    # Verificación de tokens JWT
     ├── schemas/
     │   └── orderSchemas.ts       # Schemas Zod canónicos (Cliente, Dirección, SKU, Pedido)
-    └── normalizers/
-        ├── clientNormalizer.ts   # Normalización de datos del cliente
-        ├── addressNormalizer.ts  # Normalización de dirección de envío
-        ├── skuNormalizer.ts      # Normalización de ítems / SKUs
-        └── orderNormalizer.ts    # Orquestador principal de normalización
+    ├── normalizers/
+    │   ├── clientNormalizer.ts   # Normalización de datos del cliente
+    │   ├── addressNormalizer.ts  # Normalización de dirección de envío
+    │   ├── skuNormalizer.ts      # Normalización de ítems / SKUs
+    │   └── orderNormalizer.ts    # Orquestador principal de normalización
+    └── services/
+        └── stockService.ts      # Reserva automática de stock con rollback
 ```
 
 ---

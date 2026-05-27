@@ -3,6 +3,7 @@ import { verifyJwt } from '@/lib/jwt';
 import { safeNormalizeOrder } from '@/lib/normalizers/orderNormalizer';
 import { getOrderStateTransition } from '@/lib/machines/orderStateManager';
 import { initialOrderState } from '@/lib/machines/orderStateMachine';
+import { reserveStock } from '@/lib/services/stockService';
 
 export async function POST(request: Request) {
   try {
@@ -49,62 +50,28 @@ export async function POST(request: Request) {
     });
 
     const pedidoNormalizado = normResult.data;
-    const stockValidationErrors: string[] = [];
 
-    // --- Verificación y reserva de stock (usando ítems ya normalizados) ---
-    for (const item of pedidoNormalizado.items) {
-      try {
-        const resStock = await fetch(
-          `${process.env.API_INVENTARIO_URL}/stock/${item.sku}`,
-        );
+    // --- Reserva automática de stock ---
+    const stockResult = await reserveStock(pedidoNormalizado.items, token);
 
-        if (!resStock.ok) throw new Error('Fallo al consultar inventario');
-
-        const dataStock = await resStock.json();
-
-        if (!dataStock.disponible || dataStock.cantidad < item.cantidad) {
-          stockValidationErrors.push(
-            `Stock insuficiente para SKU: ${item.sku} (disponible: ${dataStock.cantidad}, solicitado: ${item.cantidad})`,
-          );
-          continue;
-        }
-
-        const resReserva = await fetch(
-          `${process.env.API_INVENTARIO_URL}/stock/reserve`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ sku: item.sku, cantidad: item.cantidad }),
-          },
-        );
-
-        if (!resReserva.ok)
-          throw new Error(`Fallo al reservar SKU: ${item.sku}`);
-      } catch (error) {
-        stockValidationErrors.push(
-          `Error procesando SKU ${item.sku}: ${error instanceof Error ? error.message : 'Error desconocido'}`,
-        );
-      }
-    }
-
-    // Si hay errores de stock, transicionar a rechazado
-    if (stockValidationErrors.length > 0) {
+    if (!stockResult.success) {
+      // Transicion: verificado -> rechazado (stock insuficiente)
       stateTransition = getOrderStateTransition(stateTransition.nextState, {
         type: 'VALIDACION_FALLIDA',
-        error: `Stock insuficiente: ${stockValidationErrors.join('; ')}`,
+        error: stockResult.error,
       });
 
+      const statusCode =
+        stockResult.tipo === 'stock_insuficiente' ? 409 : 503;
       return NextResponse.json(
         {
-          error: 'Error de validación de stock',
-          errores_stock: stockValidationErrors,
+          error: stockResult.error,
+          sku: stockResult.sku,
+          tipo: stockResult.tipo,
           estado: stateTransition.nextState,
           transicion: stateTransition.message,
         },
-        { status: 409 },
+        { status: statusCode },
       );
     }
 
@@ -115,6 +82,7 @@ export async function POST(request: Request) {
           ...pedidoNormalizado,
           estado: stateTransition.nextState,
         },
+        reservas: stockResult.reservas,
         estado: stateTransition.nextState,
         transicion: stateTransition.message,
       },
