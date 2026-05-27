@@ -4,6 +4,7 @@ import { safeNormalizeOrder } from '@/lib/normalizers/orderNormalizer';
 import { getOrderStateTransition } from '@/lib/machines/orderStateManager';
 import { initialOrderState } from '@/lib/machines/orderStateMachine';
 import { reserveStock } from '@/lib/services/stockService';
+import { persistOrder } from '@/lib/services/orderPersistence';
 
 export async function POST(request: Request) {
   try {
@@ -76,6 +77,13 @@ export async function POST(request: Request) {
       );
     }
 
+    // --- Persistencia en base de datos ---
+    const pedidoPersistido = await persistOrder(
+      pedidoNormalizado,
+      stateTransition.nextState,
+      stockResult.reservas,
+    );
+
     return NextResponse.json(
       {
         mensaje: 'Pedido Mobile recibido, normalizado y stock reservado',
@@ -83,6 +91,7 @@ export async function POST(request: Request) {
           ...pedidoNormalizado,
           estado: stateTransition.nextState,
         },
+        pedido_id: pedidoPersistido.id,
         reservas: stockResult.reservas,
         estado: stateTransition.nextState,
         transicion: stateTransition.message,

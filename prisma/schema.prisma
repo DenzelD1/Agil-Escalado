@@ -1,44 +1,33 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
 }
 
-model Order {
-  id              String   @id @default(uuid())
-  idCanal         String
-  tipoCanal       String
-  clienteId       String
-  direccionId     String
-  subtotal        Float
-  impuestos       Float
-  total           Float
-  estado          String
-  prioridad       String   @default("media")
-  recibidoEn      DateTime @default(now())
-
-  cliente         Client   @relation(fields: [clienteId], references: [id])
-  direccionEnvio  Address  @relation(fields: [direccionId], references: [id])
-  items           Item[]
-}
-
+// ---------------------------------------------------------------------------
+// Cliente
+// ---------------------------------------------------------------------------
 model Client {
-  id       String  @id @default(uuid())
-  nombre   String
-  email    String
-  telefono String?
-  orders   Order[]
+  id        String   @id @default(uuid())
+  nombre    String
+  email     String   @unique
+  telefono  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders    Order[]
+  addresses Address[]
 }
 
+// ---------------------------------------------------------------------------
+// Dirección de envío
+// ---------------------------------------------------------------------------
 model Address {
   id               String  @id @default(uuid())
   calle            String
@@ -46,18 +35,65 @@ model Address {
   ciudad           String
   region           String?
   codigoPostal     String?
-  pais             String  @default("Chile")
+  pais             String  @default("CHILE")
   notasAdicionales String?
-  orders           Order[]
+
+  clienteId String?
+  cliente   Client? @relation(fields: [clienteId], references: [id])
+
+  orders Order[]
 }
 
+// ---------------------------------------------------------------------------
+// Pedido
+// ---------------------------------------------------------------------------
+model Order {
+  id         String   @id @default(uuid())
+  idCanal    String
+  tipoCanal  String
+  estado     String   @default("creado")
+  prioridad  String   @default("media")
+  subtotal   Float
+  impuestos  Float
+  total      Float
+  agenteId   String?
+  recibidoEn DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  clienteId String
+  cliente   Client @relation(fields: [clienteId], references: [id])
+
+  direccionId String
+  direccion   Address @relation(fields: [direccionId], references: [id])
+
+  items             Item[]
+  stockReservations StockReservation[]
+}
+
+// ---------------------------------------------------------------------------
+// Ítem del pedido (SKU)
+// ---------------------------------------------------------------------------
 model Item {
   id             String @id @default(uuid())
-  orderId        String
   sku            String
   cantidad       Int
   precioUnitario Float
   descuento      Float  @default(0)
 
-  order          Order  @relation(fields: [orderId], references: [id])
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+// ---------------------------------------------------------------------------
+// Reserva de stock (referencia al servicio de inventario externo)
+// ---------------------------------------------------------------------------
+model StockReservation {
+  id        String   @id @default(uuid())
+  sku       String
+  cantidad  Int
+  reservaId String
+  createdAt DateTime @default(now())
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
