@@ -57,6 +57,8 @@ model Order {
   impuestos  Float
   total      Float
   agenteId   String?
+  intentosPago Int      @default(0)
+  motivoRechazo String?
   recibidoEn DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

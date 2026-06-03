@@ -11,7 +11,7 @@ interface DashboardProps {
 
 export default async function DashboardPage({ searchParams }: DashboardProps) {
   const resolvedSearchParams = await searchParams;
-  
+
   const canalFilter = typeof resolvedSearchParams.canal === 'string' ? resolvedSearchParams.canal : undefined;
   const prioridadFilter = typeof resolvedSearchParams.prioridad === 'string' ? resolvedSearchParams.prioridad : undefined;
   const view = typeof resolvedSearchParams.view === 'string' ? resolvedSearchParams.view : 'table';
@@ -27,11 +27,11 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
 
   // Filtrar los pedidos
   let filteredOrders = [...MOCK_ORDERS];
-  
+
   if (canalFilter) {
     filteredOrders = filteredOrders.filter(order => order.tipo_canal === canalFilter);
   }
-  
+
   if (prioridadFilter) {
     filteredOrders = filteredOrders.filter(order => order.prioridad === prioridadFilter);
   }
@@ -54,26 +54,24 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
               Gestión centralizada de pedidos omnicanal. Datos de prueba cargados.
             </p>
           </div>
-          
+
           {/* View Toggle */}
           <div className="flex bg-brand-alabaster/30 p-1 rounded-lg border border-brand-alabaster self-start">
-            <Link 
+            <Link
               href={buildUrl('table')}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                view === 'table' 
-                  ? 'bg-brand-white text-brand-yale shadow-sm border border-brand-alabaster' 
-                  : 'text-brand-graphite/70 hover:text-brand-graphite hover:bg-brand-alabaster/50'
-              }`}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${view === 'table'
+                ? 'bg-brand-white text-brand-yale shadow-sm border border-brand-alabaster'
+                : 'text-brand-graphite/70 hover:text-brand-graphite hover:bg-brand-alabaster/50'
+                }`}
             >
               Tabla
             </Link>
-            <Link 
+            <Link
               href={buildUrl('kanban')}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                view === 'kanban' 
-                  ? 'bg-brand-white text-brand-yale shadow-sm border border-brand-alabaster' 
-                  : 'text-brand-graphite/70 hover:text-brand-graphite hover:bg-brand-alabaster/50'
-              }`}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${view === 'kanban'
+                ? 'bg-brand-white text-brand-yale shadow-sm border border-brand-alabaster'
+                : 'text-brand-graphite/70 hover:text-brand-graphite hover:bg-brand-alabaster/50'
+                }`}
             >
               Kanban
             </Link>
