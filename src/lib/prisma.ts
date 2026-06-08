@@ -1,8 +1,8 @@
 import { PrismaClient } from "@/generated/prisma/client";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaPg } from "@prisma/adapter-pg";
 
 // ---------------------------------------------------------------------------
-// Singleton de PrismaClient con driver adapter para SQLite (Prisma 7)
+// Singleton de PrismaClient para PostgreSQL (Prisma 7)
 //
 // En desarrollo, reutilizamos la instancia entre recargas de HMR para evitar
 // agotar las conexiones. En producción, se crea una sola instancia.
@@ -13,10 +13,13 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient(): PrismaClient {
-  const adapter = new PrismaBetterSqlite3({
-    url: process.env.DATABASE_URL ?? "file:./dev.db",
+  return new PrismaClient({
+    adapter: new PrismaPg({
+      connectionString:
+        process.env.DATABASE_URL ??
+        "postgresql://postgres:postgres@localhost:5432/agil_escalado?schema=public",
+    }),
   });
-  return new PrismaClient({ adapter });
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();
