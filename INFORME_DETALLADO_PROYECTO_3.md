@@ -666,6 +666,32 @@ Los tres endpoints (`/api/web`, `/api/mobile`, `/api/callcenter`) ahora implemen
    - HTTP status 201 (creado exitosamente)
 ```
 
+### Publicación de eventos de cambio de estado en Redis
+
+Cada transición de pedido ahora genera un evento hacia Redis para facilitar la orquestación con servicios externos.
+
+- Canal Redis por defecto: `order:state_changes`
+- Variable de entorno configurada: `REDIS_ORDER_STATE_CHANNEL`
+- URL de redis configurada con: `REDIS_URL`
+
+**Qué se publica:**
+- `orderId`
+- `previousState`
+- `nextState`
+- `eventType`
+- `message`
+- `timestamp`
+- `metadata` opcional
+
+**Dónde se publica:**
+- `src/lib/services/redisEventBus.ts`
+- Se consume desde `src/lib/machines/orderStateManager.ts` cuando `publishToRedis: true`
+
+**Beneficio:**
+- Desacopla la máquina de estados del consumidor final
+- Permite a otros servicios suscribirse en tiempo real a cambios críticos de pedido
+- Si Redis falla, la transición de estado no se bloquea; el pedido sigue procesándose y se registra el error
+
 ### Ejemplo real de respuesta POST /api/web (exitoso)
 
 ```json

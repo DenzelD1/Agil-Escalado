@@ -25,7 +25,10 @@ export async function GET(request: Request) {
 
     for (const order of failedOrders) {
       // Intentar pasarlo a verificado mediante el evento REINTENTAR
-      const transition = getOrderStateTransition(order.estado as any, { type: 'REINTENTAR' });
+      const transition = await getOrderStateTransition(order.estado as any, { type: 'REINTENTAR' }, {
+        orderId: order.id,
+        publishToRedis: true,
+      });
 
       if (transition.success) {
         // Actualizar el estado de la orden para que el cronjob/webhook simule reintento

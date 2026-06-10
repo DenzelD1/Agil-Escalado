@@ -1,5 +1,6 @@
 import { createActor } from 'xstate';
 import { orderStateMachine, type OrderStatus, type OrderStateEvent } from './orderStateMachine';
+import { publishOrderStateChange } from '@/lib/services/redisEventBus';
 
 // Facilita la creacion de instancias de la maquina y transicionar entre estados
 
@@ -93,15 +94,20 @@ export function transitionOrderState(
 
 
 // Obtiene el proximo estado basado en el evento, retornando estructura util para APIs.
-export function getOrderStateTransition(
+export async function getOrderStateTransition(
   currentState: OrderStatus,
   event: OrderStateEvent,
-): {
+  options?: {
+    orderId?: string;
+    publishToRedis?: boolean;
+    metadata?: Record<string, unknown>;
+  },
+): Promise<{
   success: boolean;
   nextState: OrderStatus;
   message: string;
   error?: string;
-} {
+}> {
   const result = transitionOrderState(currentState, event);
 
   if (result.error) {
@@ -113,9 +119,28 @@ export function getOrderStateTransition(
     };
   }
 
-  return {
+  const response = {
     success: true,
     nextState: result.nextState,
     message: `Pedido pasó de '${currentState}' a '${result.nextState}'`,
   };
+
+  if (options?.publishToRedis) {
+    try {
+      await publishOrderStateChange({
+        orderId: options.orderId,
+        previousState: currentState,
+        nextState: result.nextState,
+        eventType: event.type,
+        message: response.message,
+        timestamp: new Date().toISOString(),
+        error: result.error,
+        metadata: options.metadata,
+      });
+    } catch (publishError) {
+      console.error('No se pudo publicar evento de estado a Redis:', publishError);
+    }
+  }
+
+  return response;
 }

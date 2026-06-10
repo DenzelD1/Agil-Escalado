@@ -31,9 +31,16 @@ export async function POST(request: Request) {
     }
 
     // Attempt transition
-    const transition = getOrderStateTransition(order.estado as OrderStatus, { 
+    const transition = await getOrderStateTransition(order.estado as OrderStatus, { 
       type: eventType, 
       error: errorReason 
+    }, {
+      orderId,
+      publishToRedis: true,
+      metadata: {
+        reason: errorReason,
+        source: 'payment_webhook',
+      },
     });
 
     if (!transition.success) {

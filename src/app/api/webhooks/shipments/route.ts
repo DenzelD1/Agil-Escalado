@@ -40,9 +40,17 @@ export async function POST(request: Request) {
       );
     }
 
-    const transition = getOrderStateTransition(
+    const transition = await getOrderStateTransition(
       order.estado as OrderStatus,
       { type: eventType, trackingNumber },
+      {
+        orderId,
+        publishToRedis: true,
+        metadata: {
+          trackingNumber: trackingNumber ?? undefined,
+          source: 'shipping_webhook',
+        },
+      },
     );
 
     if (!transition.success) {

@@ -30,9 +30,11 @@ export async function POST(request: Request) {
 
     if (!normResult.success) {
       // Transicion: creado -> rechazado (validacion fallida)
-      const stateTransition = getOrderStateTransition(initialOrderState, {
+      const stateTransition = await getOrderStateTransition(initialOrderState, {
         type: 'VALIDACION_FALLIDA',
         error: `Validación rechazada: ${normResult.errors.map((e) => e.mensaje).join('; ')}`,
+      }, {
+        publishToRedis: true,
       });
 
       return NextResponse.json(
@@ -47,8 +49,11 @@ export async function POST(request: Request) {
     }
 
     // Transicion: creado -> verificado (validacion exitosa)
-    let stateTransition = getOrderStateTransition(initialOrderState, {
+    let stateTransition = await getOrderStateTransition(initialOrderState, {
       type: 'VALIDACION_EXITOSA',
+    }, {
+      orderId: normResult.data.id_pedido,
+      publishToRedis: true,
     });
 
     const pedidoNormalizado = normResult.data;
@@ -58,9 +63,12 @@ export async function POST(request: Request) {
 
     if (!stockResult.success) {
       // Transicion: verificado -> rechazado (stock insuficiente)
-      stateTransition = getOrderStateTransition(stateTransition.nextState, {
+      stateTransition = await getOrderStateTransition(stateTransition.nextState, {
         type: 'VALIDACION_FALLIDA',
         error: stockResult.error,
+      }, {
+        orderId: pedidoNormalizado.id_pedido,
+        publishToRedis: true,
       });
 
       const statusCode =
