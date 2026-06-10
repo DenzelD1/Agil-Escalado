@@ -40,6 +40,8 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
         return <span className="bg-brand-teal/10 text-brand-teal text-xs font-medium px-2.5 py-0.5 rounded-full border border-brand-teal/20">Pagado</span>;
       case 'listo_para_despacho':
         return <span className="bg-purple-50 text-purple-700 text-xs font-medium px-2.5 py-0.5 rounded-full border border-purple-200">Listo para despacho</span>;
+      case 'en_transito':
+        return <span className="bg-amber-50 text-amber-700 text-xs font-medium px-2.5 py-0.5 rounded-full border border-amber-200">En tránsito</span>;
       case 'entregado':
         return <span className="bg-green-50 text-green-700 text-xs font-medium px-2.5 py-0.5 rounded-full border border-green-200">Entregado</span>;
       case 'rechazado':

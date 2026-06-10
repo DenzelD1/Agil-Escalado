@@ -9,6 +9,7 @@ const KANBAN_COLUMNS = [
   { id: 'verificado', title: 'Verificado', color: 'border-indigo-200 bg-indigo-50/50', headerColor: 'bg-indigo-100 text-indigo-800' },
   { id: 'pagado', title: 'Pagado', color: 'border-brand-teal/20 bg-brand-teal/5', headerColor: 'bg-brand-teal/20 text-brand-teal' },
   { id: 'listo_para_despacho', title: 'Para Despacho', color: 'border-purple-200 bg-purple-50/50', headerColor: 'bg-purple-100 text-purple-800' },
+  { id: 'en_transito', title: 'En Tránsito', color: 'border-amber-200 bg-amber-50/50', headerColor: 'bg-amber-100 text-amber-800' },
   { id: 'entregado', title: 'Entregado', color: 'border-green-200 bg-green-50/50', headerColor: 'bg-green-100 text-green-800' },
   { id: 'rechazado', title: 'Rechazado', color: 'border-red-200 bg-red-50/50', headerColor: 'bg-red-100 text-red-800' },
   { id: 'cancelado', title: 'Cancelado', color: 'border-gray-200 bg-gray-50/50', headerColor: 'bg-gray-200 text-gray-800' },

@@ -14,6 +14,7 @@ export const OrderStatusSchema = z.enum([
   'verificado',
   'pagado',
   'listo_para_despacho',
+  'en_transito',
   'entregado',
   'rechazado',
   'cancelado',

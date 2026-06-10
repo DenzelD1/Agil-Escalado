@@ -6,7 +6,7 @@ const getRandomItem = <T>(arr: T[]) => arr[Math.floor(Math.random() * arr.length
 const nombres = ['Juan Pérez', 'María Gómez', 'Carlos López', 'Ana Silva', 'Pedro Martínez', 'Laura Rodríguez', 'Diego Fernández', 'Sofía Castillo'];
 const canales: Canal[] = ['web', 'app', 'call_center'];
 const prioridades: Prioridad[] = ['alta', 'media', 'baja'];
-const estados = ['creado', 'verificado', 'pagado', 'listo_para_despacho', 'entregado', 'rechazado', 'cancelado'];
+const estados = ['creado', 'verificado', 'pagado', 'listo_para_despacho', 'en_transito', 'entregado', 'rechazado', 'cancelado'];
 
 export const generateMockOrders = (count: number): NormalizedOrder[] => {
   return Array.from({ length: count }).map((_, i) => {

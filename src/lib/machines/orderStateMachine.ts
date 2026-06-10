@@ -13,6 +13,7 @@ export type OrderStateEvent =
   | { type: 'STOCK_RESERVADO' }
   | { type: 'STOCK_INSUFICIENTE'; error: string }
   | { type: 'ENVIAR' }
+  | { type: 'EN_TRANSITO'; trackingNumber?: string }
   | { type: 'ENTREGADO' }
   | { type: 'CANCELAR' }
   | { type: 'REINTENTAR' };
@@ -22,6 +23,7 @@ export type OrderStatus =
   | 'verificado'
   | 'pagado'
   | 'listo_para_despacho'
+  | 'en_transito'
   | 'entregado'
   | 'rechazado'
   | 'cancelado';
@@ -62,6 +64,12 @@ export const orderStateMachine = createMachine(
         },
       },
       listo_para_despacho: {
+        on: {
+          EN_TRANSITO: 'en_transito',
+          CANCELAR: 'cancelado',
+        },
+      },
+      en_transito: {
         on: {
           ENTREGADO: 'entregado',
           CANCELAR: 'cancelado',

@@ -63,6 +63,10 @@ export function transitionOrderState(
       CANCELAR: 'cancelado',
     },
     listo_para_despacho: {
+      EN_TRANSITO: 'en_transito',
+      CANCELAR: 'cancelado',
+    },
+    en_transito: {
       ENTREGADO: 'entregado',
       CANCELAR: 'cancelado',
     },
