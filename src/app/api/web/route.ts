@@ -1,13 +1,23 @@
 import { NextResponse } from 'next/server';
+import { checkRateLimit } from '@/lib/middlewares/rateLimiter';
 import { verifyJwt } from '@/lib/jwt';
 import { safeNormalizeOrder } from '@/lib/normalizers/orderNormalizer';
 import { getOrderStateTransition } from '@/lib/machines/orderStateManager';
 import { initialOrderState } from '@/lib/machines/orderStateMachine';
-import { reserveStock } from '@/lib/services/stockService';
+import { reserveStock, rollbackReservations } from '@/lib/services/stockService';
 import { persistOrder } from '@/lib/services/orderPersistence';
 
 export async function POST(request: Request) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+    const isAllowed = await checkRateLimit(ip);
+    if (!isAllowed) {
+      return NextResponse.json(
+        { error: 'Demasiadas peticiones (Rate Limit excedido). Intente más tarde.' },
+        { status: 429 }
+      );
+    }
+
     const authHeader = request.headers.get('authorization');
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -21,7 +31,23 @@ export async function POST(request: Request) {
     const decodedToken = await verifyJwt(token);
     const usuarioId = decodedToken.sub;
 
-    const body = await request.json();
+    const contentLength = request.headers.get('content-length');
+    if (contentLength && parseInt(contentLength, 10) > 1024 * 1024) { // 1MB limit
+      return NextResponse.json(
+        { error: 'El tamaño de la petición excede el límite permitido de 1MB.' },
+        { status: 413 }
+      );
+    }
+
+    let body: any;
+    try {
+      body = await request.json();
+    } catch (e) {
+      return NextResponse.json(
+        { error: 'Cuerpo de la petición inválido o malformado' },
+        { status: 400 },
+      );
+    }
 
     // Normalización de datos
     const normResult = safeNormalizeOrder(body, 'web');
@@ -83,11 +109,25 @@ export async function POST(request: Request) {
       );
     }
 
-    const pedidoPersistido = await persistOrder(
-      pedidoNormalizado,
-      stateTransition.nextState,
-      stockResult.reservas,
-    );
+    let pedidoPersistido;
+    try {
+      pedidoPersistido = await persistOrder(
+        pedidoNormalizado,
+        stateTransition.nextState,
+        stockResult.reservas,
+      );
+    } catch (dbError) {
+      console.error('Error persistiendo pedido Web en DB:', dbError);
+      
+      if (stockResult.reservas.length > 0) {
+        await rollbackReservations(stockResult.reservas, token);
+      }
+
+      return NextResponse.json(
+        { error: 'Error interno guardando el pedido. Se ha liberado el inventario reservado.' },
+        { status: 500 },
+      );
+    }
 
     return NextResponse.json(
       {

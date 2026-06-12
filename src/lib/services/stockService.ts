@@ -18,95 +18,7 @@ export interface StockReserveError {
   tipo: 'stock_insuficiente' | 'servicio_no_disponible' | 'reserva_fallida';
 }
 
-// Helpers internos
-
-const INVENTARIO_URL = () => {
-  const url = process.env.API_INVENTARIO_URL;
-  if (!url) {
-    throw new Error(
-      'API_INVENTARIO_URL no está configurada en las variables de entorno',
-    );
-  }
-  return url.replace(/\/+$/, '');
-};
-
-/**
- * Consulta la disponibilidad de un SKU en el servicio de inventario.
- */
-async function checkAvailability(
-  sku: string,
-  cantidadRequerida: number,
-): Promise<{ disponible: boolean; cantidadDisponible: number }> {
-  const res = await fetch(`${INVENTARIO_URL()}/stock/${sku}`);
-
-  if (!res.ok) {
-    throw new Error(`Servicio de inventario no disponible (HTTP ${res.status})`);
-  }
-
-  const data = (await res.json()) as {
-    disponible?: boolean;
-    cantidad?: number;
-  };
-
-  return {
-    disponible:
-      (data.disponible ?? true) &&
-      (data.cantidad ?? 0) >= cantidadRequerida,
-    cantidadDisponible: data.cantidad ?? 0,
-  };
-}
-
-/**
- * Solicita la reserva de un SKU en el servicio de inventario.
- * Devuelve el ID de reserva generado por el servicio externo.
- */
-async function requestReservation(
-  sku: string,
-  cantidad: number,
-  token: string,
-): Promise<string> {
-  const res = await fetch(`${INVENTARIO_URL()}/stock/reserve`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ sku, cantidad }),
-  });
-
-  if (!res.ok) {
-    throw new Error(`Hay un fallo al reservar SKU ${sku} (HTTP ${res.status})`);
-  }
-
-  const data = (await res.json()) as { reserva_id?: string; id?: string };
-  return data.reserva_id ?? data.id ?? `RSV-${sku}-${Date.now()}`;
-}
-
-/**
- * Libera una reserva previa (rollback).
- * Se ejecuta en best-effort: si falla el rollback, se registra pero no se
- * relanza el error para no enmascarar la causa original.
- */
-async function releaseReservation(
-  reservaId: string,
-  token: string,
-): Promise<void> {
-  try {
-    await fetch(`${INVENTARIO_URL()}/stock/release`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ reserva_id: reservaId }),
-    });
-  } catch (err) {
-    console.error(
-      `[StockService] Error al liberar reserva ${reservaId}:`,
-      err,
-    );
-  }
-}
+import { requestReservation, releaseReservationWithRetry } from './inventoryClient';
 
 // API pública
 
@@ -126,63 +38,45 @@ export async function reserveStock(
   items: ItemType[],
   token: string,
 ): Promise<StockReserveResult | StockReserveError> {
-  const reservasRealizadas: StockReservation[] = [];
-
-  for (const item of items) {
-    try {
-      // --- 1. Verificar disponibilidad ---
-      const { disponible, cantidadDisponible } = await checkAvailability(
-        item.sku,
-        item.cantidad,
-      );
-
-      if (!disponible) {
-        await rollbackReservations(reservasRealizadas, token);
-        return {
-          success: false,
-          error: `Stock insuficiente para SKU: ${item.sku}. Disponible: ${cantidadDisponible}, solicitado: ${item.cantidad}`,
-          sku: item.sku,
-          tipo: 'stock_insuficiente',
-        };
+  const resultados = await Promise.allSettled(
+    items.map(async (item) => {
+      try {
+        const reservaId = await requestReservation(item.sku, item.cantidad, token);
+        return { success: true as const, reserva: { sku: item.sku, cantidad: item.cantidad, reserva_id: reservaId } };
+      } catch (err) {
+        return { success: false as const, sku: item.sku, err };
       }
+    })
+  );
 
-      // --- 2. Reservar ---
-      const reservaId = await requestReservation(
-        item.sku,
-        item.cantidad,
-        token,
-      );
+  const reservasExitosas: StockReservation[] = [];
+  let primerError: { sku: string; err: unknown } | null = null;
 
-      reservasRealizadas.push({
-        sku: item.sku,
-        cantidad: item.cantidad,
-        reserva_id: reservaId,
-      });
-    } catch (err) {
-      console.error(
-        `[StockService] Error al procesar SKU ${item.sku}:`,
-        err,
-      );
-
-      await rollbackReservations(reservasRealizadas, token);
-
-      const esErrorDeServicio =
-        err instanceof Error &&
-        err.message.includes('no disponible');
-
-      return {
-        success: false,
-        error:
-          err instanceof Error
-            ? err.message
-            : `Error inesperado reservando el SKU: ${item.sku}`,
-        sku: item.sku,
-        tipo: esErrorDeServicio ? 'servicio_no_disponible' : 'reserva_fallida',
-      };
+  for (const res of resultados) {
+    if (res.status === 'fulfilled') {
+      if (res.value.success) {
+        reservasExitosas.push(res.value.reserva);
+      } else if (!primerError) {
+        primerError = { sku: res.value.sku, err: res.value.err };
+      }
     }
   }
 
-  return { success: true, reservas: reservasRealizadas };
+  if (primerError) {
+    await rollbackReservations(reservasExitosas, token);
+    
+    const esErrorDeServicio = primerError.err instanceof Error && primerError.err.message.includes('no disponible');
+    const is409 = primerError.err instanceof Error && primerError.err.message.includes('HTTP 409');
+
+    return {
+      success: false,
+      error: primerError.err instanceof Error ? primerError.err.message : `Error inesperado reservando el SKU: ${primerError.sku}`,
+      sku: primerError.sku,
+      tipo: is409 ? 'stock_insuficiente' : (esErrorDeServicio ? 'servicio_no_disponible' : 'reserva_fallida')
+    };
+  }
+
+  return { success: true, reservas: reservasExitosas };
 }
 
 /**
@@ -199,7 +93,7 @@ export async function rollbackReservations(
   );
 
   await Promise.allSettled(
-    reservas.map((r) => releaseReservation(r.reserva_id, token)),
+    reservas.map((r) => releaseReservationWithRetry(r.reserva_id, token)),
   );
 
   console.warn('[StockService] Rollback completado.');

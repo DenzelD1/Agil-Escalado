@@ -22,13 +22,13 @@ function getRedisChannel(): string {
   return process.env.REDIS_ORDER_STATE_CHANNEL ?? 'order:state_changes';
 }
 
-async function getRedisClient(): Promise<RedisClientType> {
+export async function getRedisClient(): Promise<RedisClientType> {
   if (redisClient && redisClient.isOpen) {
     return redisClient;
   }
 
   redisClient = createClient({ url: getRedisUrl() });
-  redisClient.on('error', (error) => {
+  redisClient.on('error', (error: Error) => {
     console.error('[RedisEventBus] Redis client error:', error);
   });
 
