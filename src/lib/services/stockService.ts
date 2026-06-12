@@ -1,9 +1,5 @@
 import type { ItemType } from '@/lib/schemas/orderSchemas';
 
-// ---------------------------------------------------------------------------
-// Tipos
-// ---------------------------------------------------------------------------
-
 export interface StockReservation {
   sku: string;
   cantidad: number;
@@ -22,9 +18,7 @@ export interface StockReserveError {
   tipo: 'stock_insuficiente' | 'servicio_no_disponible' | 'reserva_fallida';
 }
 
-// ---------------------------------------------------------------------------
 // Helpers internos
-// ---------------------------------------------------------------------------
 
 const INVENTARIO_URL = () => {
   const url = process.env.API_INVENTARIO_URL;
@@ -33,7 +27,7 @@ const INVENTARIO_URL = () => {
       'API_INVENTARIO_URL no está configurada en las variables de entorno',
     );
   }
-  return url.replace(/\/+$/, ''); // quitar trailing slash
+  return url.replace(/\/+$/, '');
 };
 
 /**
@@ -81,7 +75,7 @@ async function requestReservation(
   });
 
   if (!res.ok) {
-    throw new Error(`Fallo al reservar SKU ${sku} (HTTP ${res.status})`);
+    throw new Error(`Hay un fallo al reservar SKU ${sku} (HTTP ${res.status})`);
   }
 
   const data = (await res.json()) as { reserva_id?: string; id?: string };
@@ -107,7 +101,6 @@ async function releaseReservation(
       body: JSON.stringify({ reserva_id: reservaId }),
     });
   } catch (err) {
-    // Best-effort: logueamos pero no relanzamos
     console.error(
       `[StockService] Error al liberar reserva ${reservaId}:`,
       err,
@@ -115,15 +108,13 @@ async function releaseReservation(
   }
 }
 
-// ---------------------------------------------------------------------------
 // API pública
-// ---------------------------------------------------------------------------
 
 /**
  * Reserva automática de stock para todos los ítems de un pedido.
  *
  * Flujo:
- *  1. Para cada ítem, verifica disponibilidad.
+ *  1. Para cada ítem, verifica la disponibilidad.
  *  2. Si hay stock suficiente, solicita la reserva.
  *  3. Si cualquier paso falla, hace rollback de todas las reservas anteriores.
  *
@@ -146,7 +137,6 @@ export async function reserveStock(
       );
 
       if (!disponible) {
-        // Rollback de todas las reservas anteriores
         await rollbackReservations(reservasRealizadas, token);
         return {
           success: false,
@@ -169,9 +159,8 @@ export async function reserveStock(
         reserva_id: reservaId,
       });
     } catch (err) {
-      // Fallo de red/servicio → rollback y error
       console.error(
-        `[StockService] Error procesando SKU ${item.sku}:`,
+        `[StockService] Error al procesar SKU ${item.sku}:`,
         err,
       );
 
@@ -186,7 +175,7 @@ export async function reserveStock(
         error:
           err instanceof Error
             ? err.message
-            : `Error inesperado reservando SKU: ${item.sku}`,
+            : `Error inesperado reservando el SKU: ${item.sku}`,
         sku: item.sku,
         tipo: esErrorDeServicio ? 'servicio_no_disponible' : 'reserva_fallida',
       };

@@ -8,7 +8,7 @@ import { persistOrder } from '@/lib/services/orderPersistence';
 
 export async function POST(request: Request) {
   try {
-    // --- Autenticación ---
+
     const authHeader = request.headers.get('authorization');
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -24,12 +24,11 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
-    // --- Normalización de datos (Cliente, Dirección, SKU) ---
-    // El canal 'app' puede enviar: firstName/lastName, street, productId, qty, etc.
+    // Normalización de datos
     const normResult = safeNormalizeOrder(body, 'app');
 
     if (!normResult.success) {
-      // Transicion: creado -> rechazado (validacion fallida)
+      // Transicion: creado -> rechazado (en caso de que la validacion falle)
       const stateTransition = await getOrderStateTransition(initialOrderState, {
         type: 'VALIDACION_FALLIDA',
         error: `Validación rechazada: ${normResult.errors.map((e) => e.mensaje).join('; ')}`,
@@ -48,7 +47,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Transicion: creado -> verificado (validacion exitosa)
+    // Transicion: creado -> verificado (en caso de que la validacion sea exitosa)
     let stateTransition = await getOrderStateTransition(initialOrderState, {
       type: 'VALIDACION_EXITOSA',
     }, {
@@ -58,11 +57,11 @@ export async function POST(request: Request) {
 
     const pedidoNormalizado = normResult.data;
 
-    // --- Reserva automática de stock ---
+    // Reserva automática de stock
     const stockResult = await reserveStock(pedidoNormalizado.items, token);
 
     if (!stockResult.success) {
-      // Transicion: verificado -> rechazado (stock insuficiente)
+      // Transicion: verificado -> rechazado (en caso de stock insuficiente)
       stateTransition = await getOrderStateTransition(stateTransition.nextState, {
         type: 'VALIDACION_FALLIDA',
         error: stockResult.error,
@@ -85,7 +84,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // --- Persistencia en base de datos ---
+    // Persistencia en la BD
     const pedidoPersistido = await persistOrder(
       pedidoNormalizado,
       stateTransition.nextState,
@@ -94,7 +93,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        mensaje: 'Pedido Mobile recibido, normalizado y stock reservado',
+        mensaje: 'Pedido en móvil recibido, normalizado y stock reservado',
         pedido: {
           ...pedidoNormalizado,
           estado: stateTransition.nextState,
@@ -107,7 +106,7 @@ export async function POST(request: Request) {
       { status: 201 },
     );
   } catch (error) {
-    console.error('Error procesando pedido Mobile:', error);
+    console.error('Error procesando pedido en móvil:', error);
     return NextResponse.json(
       { error: 'Error interno del servidor procesando el pedido' },
       { status: 500 },

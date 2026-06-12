@@ -55,7 +55,6 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
             </p>
           </div>
 
-          {/* View Toggle */}
           <div className="flex bg-brand-alabaster/30 p-1 rounded-lg border border-brand-alabaster self-start">
             <Link
               href={buildUrl('table')}
@@ -102,7 +101,6 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
           </Suspense>
         </div>
 
-        {/* Dynamic View Rendering */}
         <div className="animate-in fade-in duration-300">
           {view === 'kanban' ? (
             <OrderKanbanBoard orders={filteredOrders} />

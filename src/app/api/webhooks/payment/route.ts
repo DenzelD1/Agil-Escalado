@@ -24,16 +24,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 });
     }
 
-    // Determine the event based on status
     let eventType: 'PAGO_APROBADO' | 'PAGO_RECHAZADO' = 'PAGO_RECHAZADO';
     if (status === 'success' || status === 'aprobado') {
       eventType = 'PAGO_APROBADO';
     }
 
-    // Attempt transition
-    const transition = await getOrderStateTransition(order.estado as OrderStatus, { 
-      type: eventType, 
-      error: errorReason 
+    const transition = await getOrderStateTransition(order.estado as OrderStatus, {
+      type: eventType,
+      error: errorReason
     }, {
       orderId,
       publishToRedis: true,
@@ -47,7 +45,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: transition.message }, { status: 400 });
     }
 
-    // Update order in DB
     if (eventType === 'PAGO_RECHAZADO') {
       await prisma.order.update({
         where: { id: orderId },
@@ -98,8 +95,8 @@ export async function POST(request: Request) {
       });
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: transition.message,
       newState: transition.nextState
     });

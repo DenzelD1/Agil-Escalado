@@ -15,18 +15,14 @@ describe('Pruebas de Normalización de Pedidos', () => {
     const result = safeNormalizeOrder(webPayload, 'web');
 
     expect(result.success).toBe(true);
-    if (result.success) { // TypeScript type narrowing
+    if (result.success) {
       const pedido = result.data;
-      
-      // Verificamos que se haya generado un ID y timestamps
       expect(pedido.id_pedido).toBeDefined();
       expect(pedido.recibido_en).toBeDefined();
-      
-      // Verificamos la normalización del estado y canal
+
       expect(pedido.estado).toBe('creado');
       expect(pedido.tipo_canal).toBe('web');
 
-      // Verificamos los cálculos matemáticos (Subtotal: 200, Impuestos(19%): 38, Total: 238)
       expect(pedido.subtotal).toBe(200);
       expect(pedido.impuestos).toBe(38);
       expect(pedido.total).toBe(238);
@@ -51,8 +47,8 @@ describe('Pruebas de Normalización de Pedidos', () => {
     expect(result.success).toBe(true);
     if (result.success) {
       const pedido = result.data;
-      
-      expect(pedido.cliente.nombre).toContain('Carlos'); 
+
+      expect(pedido.cliente.nombre).toContain('Carlos');
       expect(pedido.direccion_envio.calle).toBe('Secundaria');
       expect(pedido.items[0].sku).toBe('PROD-B');
       expect(pedido.subtotal).toBe(500);
@@ -61,8 +57,8 @@ describe('Pruebas de Normalización de Pedidos', () => {
 
   it('debe fallar la normalización si faltan datos obligatorios', () => {
     const payloadIncompleto = {
-      cliente: { nombre: 'Sin Email' }, // Falta el email obligatorio
-      items: [] // Items vacíos
+      cliente: { nombre: 'Sin Email' },
+      items: []
     };
 
     const result = safeNormalizeOrder(payloadIncompleto, 'web');

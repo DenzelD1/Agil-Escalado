@@ -12,7 +12,7 @@ vi.mock('@/lib/prisma', () => ({
 
 describe('Reporte de Desempeño Diario (reportService)', () => {
   it('debe retornar reporte en ceros si no hay pedidos', async () => {
-    // Simulamos que Prisma no encuentra resultados
+
     vi.mocked(prisma.order.findMany).mockResolvedValueOnce([]);
 
     const result = await getDailyPerformanceReport(new Date('2026-05-19'));
@@ -38,7 +38,7 @@ describe('Reporte de Desempeño Diario (reportService)', () => {
     const result = await getDailyPerformanceReport(new Date('2026-05-19'));
 
     expect(result.totalPedidos).toBe(4);
-    
+
     // Verificamos agrupación por canal
     expect(result.porCanal).toEqual({
       web: 2,

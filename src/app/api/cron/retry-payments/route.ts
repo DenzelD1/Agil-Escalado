@@ -18,31 +18,28 @@ export async function GET(request: Request) {
           not: null
         }
       },
-      take: 10 // Procesar en lotes de 10
+      take: 10 //Lo procesa en lotes de 10
     });
 
     const results = [];
 
     for (const order of failedOrders) {
-      // Intentar pasarlo a verificado mediante el evento REINTENTAR
+      // Se intenta pasarlo a verificado a través del evento REINTENTAR
       const transition = await getOrderStateTransition(order.estado as any, { type: 'REINTENTAR' }, {
         orderId: order.id,
         publishToRedis: true,
       });
 
       if (transition.success) {
-        // Actualizar el estado de la orden para que el cronjob/webhook simule reintento
+        // Actualizar el estado de la orden para que el cronjob/webhook simule el reintento
         await prisma.order.update({
           where: { id: order.id },
           data: {
             estado: transition.nextState,
-            // Podríamos limpiar el motivo de rechazo si quisiéramos,
-            // pero lo dejamos para tener un histórico hasta que pase o falle
           }
         });
         results.push({ orderId: order.id, status: 'Reintentado', nextState: transition.nextState });
-        
-        // Aquí en un sistema real, se dispararía el cobro de nuevo hacia la pasarela de pagos.
+
         console.log(`[Retry-Payment] Pedido ${order.id} reintentado (Intento ${order.intentosPago + 1}/${MAX_RETRIES})`);
       } else {
         results.push({ orderId: order.id, status: 'Error', message: transition.message });
@@ -56,7 +53,7 @@ export async function GET(request: Request) {
     });
 
   } catch (error) {
-    console.error('Error reintentando pagos:', error);
+    console.error('Error  al reintentar pagos:', error);
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }

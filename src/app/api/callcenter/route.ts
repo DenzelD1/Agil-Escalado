@@ -94,7 +94,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Transicion: creado -> verificado (validacion exitosa)
+    // Transicion: creado -> verificado (hay validacion)
     let stateTransition = await getOrderStateTransition(initialOrderState, {
       type: 'VALIDACION_EXITOSA',
     }, {
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
     const stockResult = await reserveStock(pedidoNormalizado.items, token);
 
     if (!stockResult.success) {
-      // Transicion: verificado -> rechazado (stock insuficiente)
+      // Transicion: verificado -> rechazado (no hay stock suficiente)
       stateTransition = await getOrderStateTransition(stateTransition.nextState, {
         type: 'VALIDACION_FALLIDA',
         error: stockResult.error,
@@ -135,7 +135,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // --- Persistencia en base de datos ---
     const pedidoPersistido = await persistOrder(
       pedidoNormalizado,
       stateTransition.nextState,
@@ -145,7 +144,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        mensaje: 'Pedido Call Center recibido, normalizado y stock reservado',
+        mensaje: 'Pedido recibido, normalizado y stock reservado',
         pedido: {
           ...pedidoNormalizado,
           estado: stateTransition.nextState,
@@ -159,7 +158,7 @@ export async function POST(request: Request) {
       { status: 201 },
     );
   } catch (error) {
-    console.error('Error procesando pedido Call Center:', error);
+    console.error('Error procesando pedido:', error);
     return NextResponse.json(
       { error: 'Error interno del servidor procesando el pedido' },
       { status: 500 },
