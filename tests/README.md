@@ -33,3 +33,11 @@ npm test
 ```
 
 Alternativamente, puede ejecutar `npx prisma db push --schema=prisma/schema.prisma` manualmente antes de `npm test`.
+
+## Cambios realizados en esta sesión
+
+- Se agregó `tests/api/happyFlows.test.ts` para validar flujos felices con servicios externos mockeados.
+- Se actualizaron los tests de integración de `/api/web` para incluir mocks de Redis y el flujo de webhook de pago.
+- Se agregó configuración de mocks para `@/lib/jwt`, `@/lib/middlewares/rateLimiter`, `@/lib/services/stockService`, `@/lib/services/orderPersistence`, `@/lib/services/redisEventBus` y `@/lib/prisma`.
+- Se generó el cliente Prisma con `npx prisma generate` para resolver la dependencia de la prueba de integración.
+- Se validó la suite completa de Vitest: `15 tests` pasaron exitosamente.
