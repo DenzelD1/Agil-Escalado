@@ -7,28 +7,49 @@ const INVENTARIO_URL = () => {
 };
 
 /**
+ * Consulta la ubicación óptima para reservar stock usando suggest-source.
+ */
+export async function suggestSource(sku: string, quantity: number, token: string): Promise<string> {
+  const url = `${INVENTARIO_URL()}/stock/suggest-source/${sku}?quantity=${quantity}`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!res.ok) {
+    throw new Error(`Fallo al consultar suggest-source para ${sku} (HTTP ${res.status})`);
+  }
+  const data = await res.json();
+  if (!Array.isArray(data) || data.length === 0 || !data[0].location?.id) {
+    throw new Error(`No hay ubicación sugerida con stock para ${sku}`);
+  }
+  return data[0].location.id;
+}
+
+/**
  * Solicita la reserva de un SKU en el servicio de inventario.
  */
 export async function requestReservation(
+  orderId: string,
   sku: string,
+  locationId: string,
   cantidad: number,
   token: string,
 ): Promise<string> {
-  const res = await fetch(`${INVENTARIO_URL()}/stock/reserve`, {
+  const res = await fetch(`${INVENTARIO_URL()}/reservations`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ sku, cantidad }),
+    body: JSON.stringify({ orderId, sku, locationId, quantity: cantidad }),
   });
 
   if (!res.ok) {
     throw new Error(`Hay un fallo al reservar SKU ${sku} (HTTP ${res.status})`);
   }
 
-  const data = (await res.json()) as { reserva_id?: string; id?: string };
-  return data.reserva_id ?? data.id ?? `RSV-${sku}-${Date.now()}`;
+  const result = await res.json();
+  const reservationId = result.data?.reservationId ?? result.reservationId;
+  return String(reservationId ?? `RSV-${sku}-${Date.now()}`);
 }
 
 /**
@@ -49,7 +70,7 @@ export async function releaseReservationWithRetry(
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ reserva_id: reservaId }),
+        body: JSON.stringify({ reservationId: isNaN(Number(reservaId)) ? reservaId : Number(reservaId) }),
       });
 
       if (res.ok) {
@@ -77,15 +98,21 @@ export async function releaseReservationWithRetry(
  */
 export async function confirmReservation(
   reservaId: string,
+  orderId: string,
   token: string,
 ): Promise<void> {
-  const res = await fetch(`${INVENTARIO_URL()}/reservations/payment-confirmed`, {
+  const apiKey = process.env.EXTERNAL_API_KEY || '';
+  const res = await fetch(`${INVENTARIO_URL()}/external/payment-confirmed`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
+      'X-Api-Key': apiKey,
     },
-    body: JSON.stringify({ reserva_id: reservaId }),
+    body: JSON.stringify({ 
+      reservationId: isNaN(Number(reservaId)) ? reservaId : Number(reservaId),
+      orderId 
+    }),
   });
 
   if (!res.ok) {

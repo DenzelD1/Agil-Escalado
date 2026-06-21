@@ -85,7 +85,7 @@ export async function POST(request: Request) {
     const pedidoNormalizado = normResult.data;
 
     // Reserva automática de stock
-    const stockResult = await reserveStock(pedidoNormalizado.items, token);
+    const stockResult = await reserveStock(pedidoNormalizado.items, token, pedidoNormalizado.id_pedido);
 
     if (!stockResult.success) {
       // Transicion: verificado -> rechazado (en caso de stock insuficiente)

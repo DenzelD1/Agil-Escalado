@@ -18,7 +18,7 @@ export interface StockReserveError {
   tipo: 'stock_insuficiente' | 'servicio_no_disponible' | 'reserva_fallida';
 }
 
-import { requestReservation, releaseReservationWithRetry, confirmReservation } from './inventoryClient';
+import { requestReservation, releaseReservationWithRetry, confirmReservation, suggestSource } from './inventoryClient';
 
 // API pública
 
@@ -26,22 +26,25 @@ import { requestReservation, releaseReservationWithRetry, confirmReservation } f
  * Reserva automática de stock para todos los ítems de un pedido.
  *
  * Flujo:
- *  1. Para cada ítem, verifica la disponibilidad.
- *  2. Si hay stock suficiente, solicita la reserva.
+ *  1. Para cada ítem, consulta suggest-source para obtener locationId.
+ *  2. Si hay ubicación, solicita la reserva.
  *  3. Si cualquier paso falla, hace rollback de todas las reservas anteriores.
  *
  * @param items - Array de ítems normalizados del pedido
  * @param token - JWT del usuario/agente para autorizar las reservas
+ * @param orderId - UUID del pedido generado
  * @returns Resultado con las reservas creadas o detalle del error
  */
 export async function reserveStock(
   items: ItemType[],
   token: string,
+  orderId: string,
 ): Promise<StockReserveResult | StockReserveError> {
   const resultados = await Promise.allSettled(
     items.map(async (item) => {
       try {
-        const reservaId = await requestReservation(item.sku, item.cantidad, token);
+        const locationId = await suggestSource(item.sku, item.cantidad, token);
+        const reservaId = await requestReservation(orderId, item.sku, locationId, item.cantidad, token);
         return { success: true as const, reserva: { sku: item.sku, cantidad: item.cantidad, reserva_id: reservaId } };
       } catch (err) {
         return { success: false as const, sku: item.sku, err };
@@ -105,6 +108,7 @@ export async function rollbackReservations(
 export async function confirmReservations(
   reservas: StockReservation[],
   token: string,
+  orderId: string,
 ): Promise<void> {
   if (reservas.length === 0) return;
 
@@ -113,7 +117,7 @@ export async function confirmReservations(
   );
 
   await Promise.allSettled(
-    reservas.map((r) => confirmReservation(r.reserva_id, token)),
+    reservas.map((r) => confirmReservation(r.reserva_id, orderId, token)),
   );
 
   console.log('[StockService] Confirmación completada.');

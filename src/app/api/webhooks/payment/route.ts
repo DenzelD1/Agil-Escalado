@@ -99,7 +99,7 @@ export async function POST(request: Request) {
       }).catch(e => console.error("Error despachando evento pago_fallido", e));
 
       // Escalar al CRM
-      createSupportTicket(orderId, 'Pago rechazado', { reason: errorReason, status: status })
+      createSupportTicket(orderId, order.clienteId || 'desconocido', 'Pago rechazado', { reason: errorReason, status: status })
         .catch(e => console.error("Error escalando ticket CRM", e));
 
     } else {
@@ -132,7 +132,7 @@ export async function POST(request: Request) {
           cantidad: r.cantidad,
           reserva_id: r.reservaId
         }));
-        await confirmReservations(reservasParaConfirmacion, token);
+        await confirmReservations(reservasParaConfirmacion, token, orderId);
       }
 
       // Notificar a Analítica

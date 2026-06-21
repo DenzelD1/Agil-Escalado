@@ -137,7 +137,7 @@ export async function POST(request: Request) {
       (body.agent_id as string);
 
     // --- Reserva automática de stock ---
-    const stockResult = await reserveStock(pedidoNormalizado.items, token);
+    const stockResult = await reserveStock(pedidoNormalizado.items, token, pedidoNormalizado.id_pedido);
 
     if (!stockResult.success) {
       // Transicion: verificado -> rechazado (no hay stock suficiente)

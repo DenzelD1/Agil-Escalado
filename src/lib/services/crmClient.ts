@@ -12,11 +12,13 @@ const CRM_URL = () => {
  * Ideal para escalar pedidos con fallos graves (pagos rechazados o fallos de stock persistentes).
  * 
  * @param orderId UUID del pedido fallido
+ * @param clienteId UUID del cliente afectado
  * @param issue Título o descripción corta del problema
  * @param details Objeto opcional con contexto técnico para los agentes
  */
 export async function createSupportTicket(
   orderId: string,
+  clienteId: string,
   issue: string,
   details?: Record<string, unknown>,
 ): Promise<void> {
@@ -29,10 +31,14 @@ export async function createSupportTicket(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        order_id: orderId,
-        issue,
-        status: 'open',
-        details,
+        pedido_id_ref: orderId,
+        cliente_id: clienteId, // El MER dice Int, pero le pasamos nuestro identificador
+        asunto: issue,
+        estado: 'Abierto',
+        prioridad: 'Alta',
+        canal: 'App',
+        // Pasamos details como parte del payload adicional por si su API lo procesa o lo mete a la Interaccion
+        ...details
       }),
     });
 
