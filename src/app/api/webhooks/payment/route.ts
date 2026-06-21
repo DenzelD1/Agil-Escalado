@@ -2,8 +2,10 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getOrderStateTransition } from '@/lib/machines/orderStateManager';
 import { type OrderStatus } from '@/lib/machines/orderStateMachine';
-import { rollbackReservations, type StockReservation as StockServiceReservation } from '@/lib/services/stockService';
+import { rollbackReservations, confirmReservations, type StockReservation as StockServiceReservation } from '@/lib/services/stockService';
 import { SignJWT } from 'jose';
+import { dispatchExternalEvent } from '@/lib/services/externalEventDispatcher';
+import { createSupportTicket } from '@/lib/services/crmClient';
 
 export async function POST(request: Request) {
   try {
@@ -85,6 +87,21 @@ export async function POST(request: Request) {
           where: { orderId }
         });
       }
+
+      // Notificar a Analítica
+      dispatchExternalEvent({
+        source: 'orders',
+        event_type: 'pago_fallido',
+        payload: {
+          order_id: orderId,
+          customer_id: order.clienteId || 'desconocido',
+        }
+      }).catch(e => console.error("Error despachando evento pago_fallido", e));
+
+      // Escalar al CRM
+      createSupportTicket(orderId, 'Pago rechazado', { reason: errorReason, status: status })
+        .catch(e => console.error("Error escalando ticket CRM", e));
+
     } else {
       await prisma.order.update({
         where: { id: orderId },
@@ -93,6 +110,40 @@ export async function POST(request: Request) {
           motivoRechazo: null
         }
       });
+
+      // Lógica de confirmación de Stock
+      const reservas = await prisma.stockReservation.findMany({
+        where: { orderId }
+      });
+
+      if (reservas.length > 0) {
+        if (!process.env.JWT_SECRET) {
+          throw new Error('JWT_SECRET no configurado');
+        }
+        const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+        const token = await new SignJWT({ sub: 'system', role: 'system' })
+          .setProtectedHeader({ alg: 'HS256' })
+          .setIssuedAt()
+          .setExpirationTime('10m')
+          .sign(secret);
+
+        const reservasParaConfirmacion = reservas.map(r => ({
+          sku: r.sku,
+          cantidad: r.cantidad,
+          reserva_id: r.reservaId
+        }));
+        await confirmReservations(reservasParaConfirmacion, token);
+      }
+
+      // Notificar a Analítica
+      dispatchExternalEvent({
+        source: 'orders',
+        event_type: 'pedido_pagado',
+        payload: {
+          order_id: orderId,
+          customer_id: order.clienteId || 'desconocido',
+        }
+      }).catch(e => console.error("Error despachando evento pedido_pagado", e));
     }
 
     return NextResponse.json({

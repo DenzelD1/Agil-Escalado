@@ -18,7 +18,7 @@ export interface StockReserveError {
   tipo: 'stock_insuficiente' | 'servicio_no_disponible' | 'reserva_fallida';
 }
 
-import { requestReservation, releaseReservationWithRetry } from './inventoryClient';
+import { requestReservation, releaseReservationWithRetry, confirmReservation } from './inventoryClient';
 
 // API pública
 
@@ -97,4 +97,24 @@ export async function rollbackReservations(
   );
 
   console.warn('[StockService] Rollback completado.');
+}
+
+/**
+ * Confirma todas las reservas del array (luego de un pago exitoso).
+ */
+export async function confirmReservations(
+  reservas: StockReservation[],
+  token: string,
+): Promise<void> {
+  if (reservas.length === 0) return;
+
+  console.log(
+    `[StockService] Iniciando confirmación de ${reservas.length} reserva(s)...`,
+  );
+
+  await Promise.allSettled(
+    reservas.map((r) => confirmReservation(r.reserva_id, token)),
+  );
+
+  console.log('[StockService] Confirmación completada.');
 }

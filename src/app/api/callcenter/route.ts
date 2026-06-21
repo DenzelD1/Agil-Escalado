@@ -6,6 +6,8 @@ import { getOrderStateTransition } from '@/lib/machines/orderStateManager';
 import { initialOrderState } from '@/lib/machines/orderStateMachine';
 import { reserveStock, rollbackReservations } from '@/lib/services/stockService';
 import { persistOrder } from '@/lib/services/orderPersistence';
+import { initiatePayment } from '@/lib/services/paymentClient';
+import { dispatchExternalEvent } from '@/lib/services/externalEventDispatcher';
 
 /**
  * POST /api/callcenter
@@ -181,6 +183,23 @@ export async function POST(request: Request) {
         { status: 500 },
       );
     }
+
+    // Notificar a Analítica (Proyecto 6)
+    dispatchExternalEvent({
+      source: 'orders',
+      event_type: 'pedido_creado',
+      payload: {
+        order_id: pedidoPersistido.id,
+        customer_id: pedidoNormalizado.cliente.email || 'desconocido',
+        sales_channel: pedidoNormalizado.tipo_canal,
+        total_amount: pedidoNormalizado.total,
+        total_items: pedidoNormalizado.items.reduce((acc: number, item: any) => acc + item.cantidad, 0),
+      }
+    }).catch(e => console.error("Error despachando evento pedido_creado", e));
+
+    // Iniciar pago (Proyecto 4)
+    initiatePayment(pedidoPersistido.id, pedidoNormalizado.total, { cliente: pedidoNormalizado.cliente, agenteId })
+      .catch(e => console.error("Error iniciando pago", e));
 
     return NextResponse.json(
       {

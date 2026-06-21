@@ -31,7 +31,7 @@ async function generateSystemToken(): Promise<string> {
 }
 
 /**
- * Despacha un evento hacia el sistema externo (Proyecto 5 - TI) con reintentos automáticos.
+ * Despacha un evento hacia el sistema externo (Proyecto 6 - Analítica/Eventos) con reintentos automáticos.
  */
 export async function dispatchExternalEvent(
   event: ExternalEvent,

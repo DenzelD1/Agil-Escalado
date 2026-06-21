@@ -43,7 +43,7 @@ export async function releaseReservationWithRetry(
   
   while (attempt <= maxRetries) {
     try {
-      const res = await fetch(`${INVENTARIO_URL()}/stock/release`, {
+      const res = await fetch(`${INVENTARIO_URL()}/reservations/release-reservation`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -70,4 +70,25 @@ export async function releaseReservationWithRetry(
   }
 
   console.error(`[InventoryClient] CATASTRÓFICO: No se pudo liberar la reserva ${reservaId} tras ${maxRetries + 1} intentos.`);
+}
+
+/**
+ * Confirma una reserva previa (luego de un pago exitoso).
+ */
+export async function confirmReservation(
+  reservaId: string,
+  token: string,
+): Promise<void> {
+  const res = await fetch(`${INVENTARIO_URL()}/reservations/payment-confirmed`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ reserva_id: reservaId }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`[InventoryClient] Fallo al confirmar reserva ${reservaId} (HTTP ${res.status})`);
+  }
 }
