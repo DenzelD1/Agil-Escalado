@@ -47,22 +47,27 @@ describe('Integración API /api/web', () => {
     // Levantar servidor de inventario simulado
     server = http.createServer(async (req, res) => {
       const url = req.url || '';
-      if (req.method === 'GET' && url.startsWith('/stock/')) {
-        // /stock/:sku
+      if (req.method === 'GET' && url.startsWith('/stock/suggest-source/')) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ disponible: true, cantidad: 100 }));
+        res.end(JSON.stringify([{ location: { id: 'loc-1' } }]));
         return;
       }
 
-      if (req.method === 'POST' && url === '/stock/reserve') {
+      if (req.method === 'POST' && url === '/reservations') {
         let body = '';
         for await (const chunk of req) body += chunk;
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ reserva_id: `RSV-${Date.now()}` }));
+        res.end(JSON.stringify({ data: { reservationId: `RSV-${Date.now()}` } }));
         return;
       }
 
-      if (req.method === 'POST' && url === '/stock/release') {
+      if (req.method === 'POST' && url === '/reservations/release-reservation') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({}));
+        return;
+      }
+
+      if (req.method === 'POST' && url === '/external/payment-confirmed') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({}));
         return;
