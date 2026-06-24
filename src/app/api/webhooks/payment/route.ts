@@ -75,7 +75,7 @@ export async function POST(request: Request) {
           .sign(secret);
 
         // Llamar a la API de inventario para liberar
-        const reservasParaRollback: StockServiceReservation[] = reservas.map(r => ({
+        const reservasParaRollback: StockServiceReservation[] = reservas.map((r: { sku: string; cantidad: number; reservaId: string }) => ({
           sku: r.sku,
           cantidad: r.cantidad,
           reserva_id: r.reservaId
@@ -99,8 +99,15 @@ export async function POST(request: Request) {
       }).catch(e => console.error("Error despachando evento pago_fallido", e));
 
       // Escalar al CRM
-      createSupportTicket(orderId, order.clienteId || 'desconocido', 'Pago rechazado', { reason: errorReason, status: status })
-        .catch(e => console.error("Error escalando ticket CRM", e));
+      createSupportTicket({
+        asunto: 'Pago rechazado - Pedido',
+        descripcion: errorReason || 'Pago rechazado por el proveedor',
+        prioridad: 'alta',
+        sistema_origen: 'pedidos',
+        sistema_id: 'P03',
+        pedido_id_ref: orderId,
+        contexto: JSON.stringify({ status, reason: errorReason }),
+      }).catch(e => console.error("Error escalando ticket CRM", e));
 
     } else {
       await prisma.order.update({
@@ -127,7 +134,7 @@ export async function POST(request: Request) {
           .setExpirationTime('10m')
           .sign(secret);
 
-        const reservasParaConfirmacion = reservas.map(r => ({
+        const reservasParaConfirmacion = reservas.map((r: { sku: string; cantidad: number; reservaId: string }) => ({
           sku: r.sku,
           cantidad: r.cantidad,
           reserva_id: r.reservaId

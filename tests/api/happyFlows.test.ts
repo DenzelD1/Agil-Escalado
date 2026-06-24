@@ -13,7 +13,7 @@ const mockPrisma = {
     update: vi.fn(),
   },
   stockReservation: {
-    findMany: vi.fn(),
+    findMany: vi.fn().mockResolvedValue([]),
     deleteMany: vi.fn(),
   },
   $disconnect: vi.fn(),

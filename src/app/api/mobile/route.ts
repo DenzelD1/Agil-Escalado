@@ -8,6 +8,7 @@ import { reserveStock, rollbackReservations } from '@/lib/services/stockService'
 import { persistOrder } from '@/lib/services/orderPersistence';
 import { initiatePayment } from '@/lib/services/paymentClient';
 import { dispatchExternalEvent } from '@/lib/services/externalEventDispatcher';
+import { createSupportTicket } from '@/lib/services/crmClient';
 
 export async function POST(request: Request) {
   try {
@@ -96,6 +97,17 @@ export async function POST(request: Request) {
         orderId: pedidoNormalizado.id_pedido,
         publishToRedis: true,
       });
+
+      if (stockResult.tipo === 'stock_insuficiente') {
+        createSupportTicket({
+          asunto: 'Stock insuficiente para pedido',
+          descripcion: stockResult.error,
+          prioridad: 'alta',
+          sistema_origen: 'pedidos',
+          sistema_id: 'P03',
+          pedido_id_ref: pedidoNormalizado.id_pedido,
+        }).catch(e => console.error("Error creando ticket CRM por stock insuficiente", e));
+      }
 
       const statusCode =
         stockResult.tipo === 'stock_insuficiente' ? 409 : 503;
