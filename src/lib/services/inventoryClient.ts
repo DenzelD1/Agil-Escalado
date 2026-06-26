@@ -7,40 +7,21 @@ const INVENTARIO_URL = () => {
 };
 
 /**
- * Consulta la ubicación óptima para reservar stock usando suggest-source.
- */
-export async function suggestSource(sku: string, quantity: number, token: string): Promise<string> {
-  const url = `${INVENTARIO_URL()}/stock/suggest-source/${sku}?quantity=${quantity}`;
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  if (!res.ok) {
-    throw new Error(`Fallo al consultar suggest-source para ${sku} (HTTP ${res.status})`);
-  }
-  const data = await res.json();
-  if (!Array.isArray(data) || data.length === 0 || !data[0].location?.id) {
-    throw new Error(`No hay ubicación sugerida con stock para ${sku}`);
-  }
-  return data[0].location.id;
-}
-
-/**
  * Solicita la reserva de un SKU en el servicio de inventario.
  */
 export async function requestReservation(
   orderId: string,
   sku: string,
-  locationId: string,
   cantidad: number,
   token: string,
 ): Promise<string> {
-  const res = await fetch(`${INVENTARIO_URL()}/reservations`, {
+  const res = await fetch(`${INVENTARIO_URL()}/api/v1/reservations`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ orderId, sku, locationId, quantity: cantidad }),
+    body: JSON.stringify({ orderId, sku, quantity: cantidad }),
   });
 
   if (!res.ok) {
@@ -48,7 +29,7 @@ export async function requestReservation(
   }
 
   const result = await res.json();
-  const reservationId = result.data?.reservationId ?? result.reservationId;
+  const reservationId = result.data?.reservation?.reservationId ?? result.reservationId;
   return String(reservationId ?? `RSV-${sku}-${Date.now()}`);
 }
 
@@ -64,7 +45,7 @@ export async function releaseReservationWithRetry(
   
   while (attempt <= maxRetries) {
     try {
-      const res = await fetch(`${INVENTARIO_URL()}/reservations/release-reservation`, {
+      const res = await fetch(`${INVENTARIO_URL()}/api/v1/release-reservation`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -102,7 +83,7 @@ export async function confirmReservation(
   token: string,
 ): Promise<void> {
   const apiKey = process.env.EXTERNAL_API_KEY || '';
-  const res = await fetch(`${INVENTARIO_URL()}/external/payment-confirmed`, {
+  const res = await fetch(`${INVENTARIO_URL()}/api/v1/external/payment-confirmed`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

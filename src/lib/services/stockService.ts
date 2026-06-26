@@ -18,7 +18,7 @@ export interface StockReserveError {
   tipo: 'stock_insuficiente' | 'servicio_no_disponible' | 'reserva_fallida';
 }
 
-import { requestReservation, releaseReservationWithRetry, confirmReservation, suggestSource } from './inventoryClient';
+import { requestReservation, releaseReservationWithRetry, confirmReservation } from './inventoryClient';
 
 // API pública
 
@@ -26,9 +26,8 @@ import { requestReservation, releaseReservationWithRetry, confirmReservation, su
  * Reserva automática de stock para todos los ítems de un pedido.
  *
  * Flujo:
- *  1. Para cada ítem, consulta suggest-source para obtener locationId.
- *  2. Si hay ubicación, solicita la reserva.
- *  3. Si cualquier paso falla, hace rollback de todas las reservas anteriores.
+ *  1. Solicita la reserva de cada ítem (sin especificar locationId, la API del Inventario decide).
+ *  2. Si cualquier paso falla, hace rollback de todas las reservas anteriores.
  *
  * @param items - Array de ítems normalizados del pedido
  * @param token - JWT del usuario/agente para autorizar las reservas
@@ -43,8 +42,7 @@ export async function reserveStock(
   const resultados = await Promise.allSettled(
     items.map(async (item) => {
       try {
-        const locationId = await suggestSource(item.sku, item.cantidad, token);
-        const reservaId = await requestReservation(orderId, item.sku, locationId, item.cantidad, token);
+        const reservaId = await requestReservation(orderId, item.sku, item.cantidad, token);
         return { success: true as const, reserva: { sku: item.sku, cantidad: item.cantidad, reserva_id: reservaId } };
       } catch (err) {
         return { success: false as const, sku: item.sku, err };
