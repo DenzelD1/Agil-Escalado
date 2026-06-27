@@ -7,13 +7,47 @@ import { SignJWT } from 'jose';
 import { dispatchExternalEvent } from '@/lib/services/externalEventDispatcher';
 import { createSupportTicket } from '@/lib/services/crmClient';
 
+function validateUcnpayPrivateKey(request: Request) {
+  const privateKey = request.headers.get('x-private-key');
+  const expected = process.env.UCNPAY_PRIVATE_KEY || process.env.API_PAGOS_KEY;
+
+  if (!privateKey || !expected || privateKey !== expected) {
+    return NextResponse.json(
+      { error: 'Clave privada de UCNPAY inválida o ausente' },
+      { status: 401 }
+    );
+  }
+
+  return null;
+}
+
 export async function POST(request: Request) {
+  const validationResponse = validateUcnpayPrivateKey(request);
+  if (validationResponse) return validationResponse;
   try {
-    const { orderId, status, errorReason } = await request.json();
+    const body: any = await request.json();
+
+    const orderId =
+      body.orderId ||
+      body.idOrden ||
+      body.id_orden ||
+      body.order_id ||
+      body.id;
+
+    let status = body.status;
+    if (!status && body.event) {
+      if (body.event === 'transaction.approved') {
+        status = 'APROBADO';
+      } else if (body.event === 'transaction.rejected') {
+        status = 'RECHAZADO';
+      }
+    }
+
+    const errorReason = body.reason || body.errorReason || body.error || body.motivo || body.statusReason;
 
     if (!orderId || !status) {
       return NextResponse.json(
-        { error: 'Faltan campos requeridos: orderId, status' },
+        { error: 'Faltan campos requeridos: orderId / idOrden y status' },
         { status: 400 }
       );
     }
@@ -27,7 +61,12 @@ export async function POST(request: Request) {
     }
 
     let eventType: 'PAGO_APROBADO' | 'PAGO_RECHAZADO' = 'PAGO_RECHAZADO';
-    if (status === 'success' || status === 'aprobado') {
+    if (
+      status === 'success' ||
+      status === 'aprobado' ||
+      status === 'APROBADO' ||
+      status === 'approved'
+    ) {
       eventType = 'PAGO_APROBADO';
     }
 

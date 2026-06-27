@@ -1273,14 +1273,26 @@ Si el cliente no tiene email registrado, se crea uno temporal para tracking.
    - Guardar pedido en BD después de validación
    - Retornar order_id en respuesta
 
-4. **Implementar llamada a Proyecto 4**
-   - POST ${API_PAGOS}/payments/init
-   - Enviar: order_id, monto, cliente, callback URL
+4. **Implementar llamada a Proyecto 4 / UCNPAY**
+   - POST /api/ucnpay/init
+     - Headers: `x-private-key`
+     - Body: `{ idOrden, monto, moneda, nombreComercio, returnUrl }`
+     - Respuesta: `{ token, transactionUrl, transactionId, tokenType, expiresIn }`
+   - GET /api/ucnpay/checkout/:token
+     - Retorna detalles de checkout: `{ token, comercio, montoTotal, estado, urlRetorno }`
+   - POST /api/webhooks/payment
+     - Acepta evento UCNPAY aprobado/rechazado
+     - Mapea `transaction.approved` / `transaction.rejected` a `PAGO_APROBADO` / `PAGO_RECHAZADO`
+     - Valida `x-private-key`
 
 **Salida:**
 - Pedidos persistidos en BD
 - Flujo completo: recepción → pago → confirmación
 - Manejo de pagos rechazados con stock liberado
+- Endpoint de checkout basado en token JWT
+
+**Pruebas:**
+- `tests/api/ucnpay.test.ts`
 
 **Dependencias:**
 - Contrato firmado con Proyecto 4

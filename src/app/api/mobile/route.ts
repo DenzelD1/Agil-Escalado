@@ -157,9 +157,12 @@ export async function POST(request: Request) {
       }
     }).catch(e => console.error("Error despachando evento pedido_creado", e));
 
-    // Iniciar pago (Proyecto 4)
-    initiatePayment(pedidoPersistido.id, pedidoNormalizado.total, { cliente: pedidoNormalizado.cliente })
-      .catch(e => console.error("Error iniciando pago", e));
+    // Iniciar pago en UCNPAY
+    const paymentResult = await initiatePayment(
+      pedidoPersistido.id,
+      pedidoNormalizado.total,
+      { cliente: pedidoNormalizado.cliente },
+    );
 
     return NextResponse.json(
       {
@@ -172,6 +175,12 @@ export async function POST(request: Request) {
         reservas: stockResult.reservas,
         estado: stateTransition.nextState,
         transicion: stateTransition.message,
+        pago: paymentResult
+          ? {
+              transactionUrl: paymentResult.transactionUrl,
+              transactionId: paymentResult.transactionId,
+            }
+          : undefined,
       },
       { status: 201 },
     );
