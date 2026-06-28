@@ -159,6 +159,15 @@ export async function POST(request: Request) {
           sistema_id: 'P03',
           pedido_id_ref: pedidoNormalizado.id_pedido,
         }).catch(e => console.error("Error creando ticket CRM por stock insuficiente", e));
+
+        dispatchExternalEvent({
+          source: 'orders',
+          event_type: 'stock_agotado',
+          payload: {
+            order_id: pedidoNormalizado.id_pedido,
+            customer_id: pedidoNormalizado.cliente?.email || 'desconocido',
+          }
+        }).catch(e => console.error("Error despachando evento stock_agotado", e));
       }
 
       const statusCode =
@@ -197,6 +206,15 @@ export async function POST(request: Request) {
     }
 
     // Notificar a Analítica (Proyecto 6)
+    dispatchExternalEvent({
+      source: 'orders',
+      event_type: 'stock_reservado',
+      payload: {
+        order_id: pedidoPersistido.id,
+        customer_id: pedidoNormalizado.cliente?.email || 'desconocido',
+      }
+    }).catch(e => console.error("Error despachando evento stock_reservado", e));
+
     dispatchExternalEvent({
       source: 'orders',
       event_type: 'pedido_creado',

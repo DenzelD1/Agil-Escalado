@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getOrderStateTransition } from '@/lib/machines/orderStateManager';
 import { type OrderStatus } from '@/lib/machines/orderStateMachine';
+import { dispatchExternalEvent } from '@/lib/services/externalEventDispatcher';
 
 export async function POST(request: Request) {
   try {
@@ -25,16 +26,18 @@ export async function POST(request: Request) {
       );
     }
 
-    const eventType = status === 'in_transit'
-      ? ('EN_TRANSITO' as const)
-      : status === 'delivered'
-        ? ('ENTREGADO' as const)
-        : null;
+    const eventType = status === 'ready_for_dispatch'
+      ? ('ENVIAR' as const)
+      : status === 'in_transit'
+        ? ('EN_TRANSITO' as const)
+        : status === 'delivered'
+          ? ('ENTREGADO' as const)
+          : null;
 
     if (!eventType) {
       return NextResponse.json(
         {
-          error: `Estado de tracking no válido: ${status}. Valores esperados: in_transit, delivered`,
+          error: `Estado de tracking no válido: ${status}. Valores esperados: ready_for_dispatch, in_transit, delivered`,
         },
         { status: 400 },
       );
@@ -69,6 +72,35 @@ export async function POST(request: Request) {
       where: { id: orderId },
       data: updateData as Parameters<typeof prisma.order.update>[0]['data'],
     });
+
+    if (eventType === 'ENVIAR') {
+      dispatchExternalEvent({
+        source: 'orders',
+        event_type: 'listo_para_despacho',
+        payload: {
+          order_id: orderId,
+          customer_id: order.clienteId || 'desconocido',
+        }
+      }).catch(e => console.error("Error despachando evento listo_para_despacho", e));
+    } else if (eventType === 'EN_TRANSITO') {
+      dispatchExternalEvent({
+        source: 'orders',
+        event_type: 'pedido_en_transito',
+        payload: {
+          order_id: orderId,
+          customer_id: order.clienteId || 'desconocido',
+        }
+      }).catch(e => console.error("Error despachando evento pedido_en_transito", e));
+    } else if (eventType === 'ENTREGADO') {
+      dispatchExternalEvent({
+        source: 'orders',
+        event_type: 'pedido_entregado',
+        payload: {
+          order_id: orderId,
+          customer_id: order.clienteId || 'desconocido',
+        }
+      }).catch(e => console.error("Error despachando evento pedido_entregado", e));
+    }
 
     return NextResponse.json({
       success: true,
