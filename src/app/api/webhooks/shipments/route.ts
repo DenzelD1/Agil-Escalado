@@ -74,6 +74,7 @@ export async function POST(request: Request) {
     });
 
     if (eventType === 'ENVIAR') {
+      // [PROYECTO 9 - ANALÍTICA] Evento listo_para_despacho
       dispatchExternalEvent({
         source: 'orders',
         event_type: 'listo_para_despacho',
@@ -83,6 +84,7 @@ export async function POST(request: Request) {
         }
       }).catch(e => console.error("Error despachando evento listo_para_despacho", e));
     } else if (eventType === 'EN_TRANSITO') {
+      // [PROYECTO 9 - ANALÍTICA] Evento pedido_en_transito
       dispatchExternalEvent({
         source: 'orders',
         event_type: 'pedido_en_transito',
@@ -92,6 +94,7 @@ export async function POST(request: Request) {
         }
       }).catch(e => console.error("Error despachando evento pedido_en_transito", e));
     } else if (eventType === 'ENTREGADO') {
+      // [PROYECTO 9 - ANALÍTICA] Evento pedido_entregado
       dispatchExternalEvent({
         source: 'orders',
         event_type: 'pedido_entregado',

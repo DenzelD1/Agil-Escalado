@@ -108,6 +108,7 @@ export async function POST(request: Request) {
           pedido_id_ref: pedidoNormalizado.id_pedido,
         }).catch(e => console.error("Error creando ticket CRM por stock insuficiente", e));
 
+        // [PROYECTO 9 - ANALÍTICA] Evento de stock agotado
         dispatchExternalEvent({
           source: 'orders',
           event_type: 'stock_agotado',
@@ -153,7 +154,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Notificar a Analítica (Proyecto 6)
+    // [PROYECTO 9 - ANALÍTICA] Evento de stock reservado
     dispatchExternalEvent({
       source: 'orders',
       event_type: 'stock_reservado',
@@ -163,6 +164,7 @@ export async function POST(request: Request) {
       }
     }).catch(e => console.error("Error despachando evento stock_reservado", e));
 
+    // [PROYECTO 9 - ANALÍTICA] Evento de pedido creado
     dispatchExternalEvent({
       source: 'orders',
       event_type: 'pedido_creado',

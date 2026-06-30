@@ -128,6 +128,7 @@ export async function POST(request: Request) {
       }
 
       // Notificar a Analítica
+      // [PROYECTO 9 - ANALÍTICA] Evento pago_fallido
       dispatchExternalEvent({
         source: 'orders',
         event_type: 'pago_fallido',
@@ -182,6 +183,7 @@ export async function POST(request: Request) {
       }
 
       // Notificar a Analítica
+      // [PROYECTO 9 - ANALÍTICA] Evento pedido_pagado
       dispatchExternalEvent({
         source: 'orders',
         event_type: 'pedido_pagado',
