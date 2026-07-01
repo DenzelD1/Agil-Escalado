@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach, beforeAll, afterEach, afterAll } from 'vitest';
 
+process.env.UCNPAY_PRIVATE_KEY = 'test-payment-key';
+process.env.EXTERNAL_EVENTS_URL = 'http://localhost:4999';
+
 const mockVerifyJwt = vi.fn();
 const mockCheckRateLimit = vi.fn();
 const mockReserveStock = vi.fn();
@@ -34,6 +37,7 @@ beforeAll(async () => {
   vi.doMock('@/lib/services/stockService', () => ({
     reserveStock: mockReserveStock,
     rollbackReservations: mockRollbackReservations,
+    confirmReservations: vi.fn(() => Promise.resolve()),
   }));
 
   vi.doMock('@/lib/services/orderPersistence', () => ({
@@ -46,6 +50,28 @@ beforeAll(async () => {
 
   vi.doMock('@/lib/prisma', () => ({
     prisma: mockPrisma,
+  }));
+
+  vi.doMock('@/lib/services/externalEventDispatcher', () => ({
+    dispatchExternalEvent: vi.fn(() => Promise.resolve()),
+  }));
+
+  vi.doMock('@/lib/services/crmClient', () => ({
+    createSupportTicket: vi.fn(() => Promise.resolve()),
+  }));
+
+  vi.doMock('@/lib/services/logisticsClient', () => ({
+    dispatchToLogistics: vi.fn(() => Promise.resolve({
+      success: true,
+      newState: 'listo_para_despacho',
+      shipment: { trackingNumber: 'AGS-TEST', courier: 'Test', estimatedDays: 3 },
+    })),
+    createShipment: vi.fn(() => Promise.resolve({
+      success: true,
+      trackingNumber: 'AGS-TEST',
+      courier: 'Test',
+      estimatedDays: 3,
+    })),
   }));
 
   const web = await import('@/app/api/web/route');
@@ -138,7 +164,10 @@ describe('Flujos felices con servicios externos mockeados', () => {
 
     const req = new Request('http://localhost/api/webhooks/payment', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-private-key': 'test-payment-key',
+      },
       body: JSON.stringify({ orderId: 'order-456', status: 'success' }),
     });
 

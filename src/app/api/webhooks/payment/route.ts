@@ -6,6 +6,7 @@ import { rollbackReservations, confirmReservations, type StockReservation as Sto
 import { SignJWT } from 'jose';
 import { dispatchExternalEvent } from '@/lib/services/externalEventDispatcher';
 import { createSupportTicket } from '@/lib/services/crmClient';
+import { dispatchToLogistics, type ShipmentRequest } from '@/lib/services/logisticsClient';
 
 function validateUcnpayPrivateKey(request: Request) {
   const privateKey = request.headers.get('x-private-key');
@@ -19,6 +20,53 @@ function validateUcnpayPrivateKey(request: Request) {
   }
 
   return null;
+}
+
+async function dispatchToLogisticsAfterPayment(orderId: string): Promise<void> {
+  const orderWithRelations = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      cliente: true,
+      direccion: true,
+      items: true,
+    },
+  });
+
+  if (!orderWithRelations) {
+    console.error(`[PaymentWebhook] Pedido ${orderId} no encontrado para despachar a logística`);
+    return;
+  }
+
+  const shipmentRequest: ShipmentRequest = {
+    orderId: orderWithRelations.id,
+    items: orderWithRelations.items.map(item => ({
+      sku: item.sku,
+      cantidad: item.cantidad,
+    })),
+    direccion: {
+      calle: orderWithRelations.direccion.calle,
+      numero: orderWithRelations.direccion.numero,
+      ciudad: orderWithRelations.direccion.ciudad,
+      region: orderWithRelations.direccion.region ?? undefined,
+      codigoPostal: orderWithRelations.direccion.codigoPostal ?? undefined,
+      pais: orderWithRelations.direccion.pais,
+    },
+    cliente: {
+      nombre: orderWithRelations.cliente.nombre,
+      email: orderWithRelations.cliente.email,
+      telefono: orderWithRelations.cliente.telefono ?? undefined,
+    },
+  };
+
+  const result = await dispatchToLogistics(orderId, shipmentRequest);
+
+  if (result.success) {
+    console.log(
+      `[PaymentWebhook] Pedido ${orderId} despachado a logística: estado=${result.newState}, tracking=${result.shipment?.trackingNumber}`,
+    );
+  } else {
+    console.error(`[PaymentWebhook] Error despachando pedido ${orderId} a logística: ${result.error}`);
+  }
 }
 
 export async function POST(request: Request) {
@@ -192,6 +240,11 @@ export async function POST(request: Request) {
           customer_id: order.clienteId || 'desconocido',
         }
       }).catch(e => console.error("Error despachando evento pedido_pagado", e));
+
+      // Despachar a logística (Proyecto 2) automáticamente
+      dispatchToLogisticsAfterPayment(orderId).catch(e =>
+        console.error(`[PaymentWebhook] Error despachando pedido ${orderId} a logística:`, e)
+      );
     }
 
     return NextResponse.json({

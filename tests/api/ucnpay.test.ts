@@ -6,7 +6,46 @@ import { POST as paymentWebhookPOST } from '@/app/api/webhooks/payment/route';
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     order: {
-      findUnique: vi.fn(() => ({ id: 'ORD-123', estado: 'verificado', clienteId: 'client-1' })),
+      findUnique: vi.fn(() => ({
+        id: 'ORD-123',
+        estado: 'verificado',
+        clienteId: 'client-1',
+        tipoCanal: 'web',
+        subtotal: 15000,
+        impuestos: 2850,
+        total: 17850,
+        agenteId: null,
+        motivoRechazo: null,
+        intentosPago: 0,
+        idCanal: 'WEB-001',
+        prioridad: 'media',
+        direccionId: 'addr-1',
+        recibidoEn: new Date(),
+        updatedAt: new Date(),
+        cliente: {
+          id: 'client-1',
+          nombre: 'Test',
+          email: 'test@example.com',
+          telefono: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        direccion: {
+          id: 'addr-1',
+          calle: 'Test',
+          numero: '123',
+          ciudad: 'SANTIAGO',
+          region: null,
+          codigoPostal: null,
+          pais: 'CHILE',
+          notasAdicionales: null,
+          clienteId: 'client-1',
+        },
+        items: [
+          { id: 'item-1', sku: 'PROD-A', cantidad: 1, precioUnitario: 15000, descuento: 0, orderId: 'ORD-123' },
+        ],
+        stockReservations: [],
+      })),
       update: vi.fn(() => ({ id: 'ORD-123', estado: 'pagado' })),
     },
     stockReservation: {
@@ -35,6 +74,20 @@ vi.mock('@/lib/services/externalEventDispatcher', () => ({
 
 vi.mock('@/lib/services/crmClient', () => ({
   createSupportTicket: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock('@/lib/services/logisticsClient', () => ({
+  dispatchToLogistics: vi.fn(() => Promise.resolve({
+    success: true,
+    newState: 'listo_para_despacho',
+    shipment: { trackingNumber: 'AGS-TEST', courier: 'Test', estimatedDays: 3 },
+  })),
+  createShipment: vi.fn(() => Promise.resolve({
+    success: true,
+    trackingNumber: 'AGS-TEST',
+    courier: 'Test',
+    estimatedDays: 3,
+  })),
 }));
 
 beforeAll(() => {

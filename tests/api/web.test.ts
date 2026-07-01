@@ -47,27 +47,22 @@ describe('Integración API /api/web', () => {
     // Levantar servidor de inventario simulado
     server = http.createServer(async (req, res) => {
       const url = req.url || '';
-      if (req.method === 'GET' && url.startsWith('/stock/suggest-source/')) {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify([{ location: { id: 'loc-1' } }]));
-        return;
-      }
 
-      if (req.method === 'POST' && url === '/reservations') {
+      if (req.method === 'POST' && url === '/api/v1/reservations') {
         let body = '';
         for await (const chunk of req) body += chunk;
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ data: { reservationId: `RSV-${Date.now()}` } }));
+        res.end(JSON.stringify({ reservationId: `RSV-${Date.now()}`, data: { reservation: { reservationId: `RSV-${Date.now()}` } } }));
         return;
       }
 
-      if (req.method === 'POST' && url === '/reservations/release-reservation') {
+      if (req.method === 'POST' && url === '/api/v1/release-reservation') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({}));
         return;
       }
 
-      if (req.method === 'POST' && url === '/external/payment-confirmed') {
+      if (req.method === 'POST' && url === '/api/v1/external/payment-confirmed') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({}));
         return;
@@ -168,10 +163,13 @@ describe('Integración API /api/web', () => {
     expect(createRes.status).toBe(201);
     expect(createJson).toHaveProperty('pedido_id');
 
+    process.env.UCNPAY_PRIVATE_KEY = 'test-integration-key';
+
     const webhookReq = new Request('http://localhost/api/webhooks/payment', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-private-key': 'test-integration-key',
       },
       body: JSON.stringify({ orderId: createJson.pedido_id, status: 'success' }),
     });
