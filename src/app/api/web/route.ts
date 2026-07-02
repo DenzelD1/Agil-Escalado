@@ -9,6 +9,7 @@ import { persistOrder } from '@/lib/services/orderPersistence';
 import { initiatePayment } from '@/lib/services/paymentClient';
 import { dispatchExternalEvent } from '@/lib/services/externalEventDispatcher';
 import { createSupportTicket } from '@/lib/services/crmClient';
+import { sendNotification } from '@/lib/services/notificationClient';
 
 export async function POST(request: Request) {
   try {
@@ -182,6 +183,20 @@ export async function POST(request: Request) {
       pedidoNormalizado.total,
       { cliente: pedidoNormalizado.cliente },
     );
+
+    // Notificaciones, conexión con proyecto 6
+    sendNotification({
+      channel: "email",
+      recipient: {
+        email: pedidoNormalizado.cliente.email,
+        telefono: pedidoNormalizado.cliente.telefono || undefined
+      },
+      subject: `Confirmación de tu pedido #${pedidoPersistido.id}`,
+      body: {
+        email: `<p>Hola ${pedidoNormalizado.cliente.nombre}, hemos recibido tu pedido con éxito y ya lo estamos preparando.</p>`,
+        sms: `UCN: Hola ${pedidoNormalizado.cliente.nombre}, tu pedido ha sido confirmado.`
+      }
+    }).catch(e => console.error("Error enviando notificación al Proy 6:", e));
 
     return NextResponse.json(
       {
