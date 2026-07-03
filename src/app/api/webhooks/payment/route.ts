@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { getOrderStateTransition } from '@/lib/machines/orderStateManager';
 import { rollbackReservations } from '@/lib/services/stockService';
 import { sendNotification } from '@/lib/services/notificationClient';
+import { sendOrderToLogistics } from '@/lib/services/shipmentClient';
+import { dispatchExternalEvent } from '@/lib/services/externalEventDispatcher';
 
 export async function POST(request: Request) {
   try {
@@ -16,7 +18,7 @@ export async function POST(request: Request) {
 
     const pedido = await prisma.order.findUnique({
       where: { id: idOrden },
-      include: { cliente: true, items: true }
+      include: { cliente: true, items: true, direccion: true }
     });
 
     if (!pedido) {
@@ -40,7 +42,61 @@ export async function POST(request: Request) {
         body: { email: `<p>¡Tu pago ha sido aprobado! Pronto enviaremos tus productos.</p>` }
       }).catch(e => console.log("Aviso de pago falló (no critico):", e));
 
-      return NextResponse.json({ message: "Pago procesado y pedido actualizado a 'pagado'" }, { status: 200 });
+      // Enviar el pedido confirmado al Proyecto 2 (Logística) como listo_para_despacho
+      const logisticaResult = await sendOrderToLogistics({
+        orderId: idOrden,
+        customer: {
+          nombre: pedido.cliente.nombre,
+          email: pedido.cliente.email,
+          telefono: pedido.cliente.telefono ?? undefined,
+        },
+        address: {
+          calle: pedido.direccion?.calle ?? '',
+          numero: pedido.direccion?.numero ?? '',
+          ciudad: pedido.direccion?.ciudad ?? '',
+          region: pedido.direccion?.region ?? undefined,
+          codigoPostal: pedido.direccion?.codigoPostal ?? undefined,
+          pais: pedido.direccion?.pais ?? 'CHILE',
+          notasAdicionales: pedido.direccion?.notasAdicionales ?? undefined,
+        },
+        items: pedido.items.map(item => ({
+          sku: item.sku,
+          cantidad: item.cantidad,
+        })),
+        prioridad: pedido.prioridad,
+        canal: pedido.tipoCanal,
+      });
+
+      if (logisticaResult.simulated) {
+        console.warn(`[WebhookPago] Simulando envío a logística para pedido ${idOrden}: ${logisticaResult.error}`);
+      }
+
+      // Transicionar a listo_para_despacho
+      await getOrderStateTransition('pagado' as any, { type: 'ENVIAR' }, { orderId: idOrden, publishToRedis: true });
+
+      await prisma.order.update({
+        where: { id: idOrden },
+        data: { estado: 'listo_para_despacho' }
+      });
+
+      // [PROYECTO 9 - ANALÍTICA] Evento listo_para_despacho
+      dispatchExternalEvent({
+        source: 'orders',
+        event_type: 'listo_para_despacho',
+        payload: {
+          order_id: idOrden,
+          customer_id: pedido.cliente.email,
+        }
+      }).catch(e => console.error("Error despachando evento listo_para_despacho", e));
+
+      return NextResponse.json({
+        message: "Pago procesado, pedido actualizado a 'pagado' y enviado a logística",
+        logistica: {
+          success: logisticaResult.success,
+          simulated: logisticaResult.simulated,
+          trackingNumber: logisticaResult.trackingNumber,
+        }
+      }, { status: 200 });
     }
 
     // Procesar el pago RECHAZADO
