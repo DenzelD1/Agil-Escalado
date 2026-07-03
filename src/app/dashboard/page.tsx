@@ -45,7 +45,7 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
   const highPriorityCount = filteredOrders.filter(o => o.prioridad === 'alta').length;
 
   return (
-    <div className="min-h-screen bg-brand-background text-brand-graphite p-6 md:p-10 font-sans">
+    <div className="p-6 md:p-10">
       <div className="max-w-7xl mx-auto">
         <header className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>
