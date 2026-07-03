@@ -15,7 +15,7 @@ export interface IntegrationNode {
 
 const mockIntegrations: IntegrationNode[] = [
   { id: 'P04', name: 'Pasarela UCNPay', description: 'Procesamiento de pagos (Proyecto 4)', status: 'pending', lastPing: '-', endpoint: 'http://localhost:4004/ucnpay/init' },
-  { id: 'P05', name: 'Inventario Global', description: 'Gestión de stock (Proyecto 5)', status: 'pending', lastPing: '-', endpoint: 'http://localhost:4000/api/inventory' },
+  { id: 'P05', name: 'Inventario Global', description: 'Gestión de stock (Proyecto 5)', status: 'pending', lastPing: '-', endpoint: 'https://proyectogestordeinventario-production.up.railway.app/api/inventory' },
   { id: 'P06', name: 'Notificaciones', description: 'SMS y Emails (Proyecto 6)', status: 'pending', lastPing: '-', endpoint: 'https://ucn-agil-notificaciones.up.railway.app/notifications/send' },
   { id: 'P07', name: 'CRM y Clientes', description: 'Soporte y VIPs (Proyecto 7)', status: 'pending', lastPing: '-', endpoint: 'https://pgti-proyecto-crm-backend.vercel.app/api/v1/tickets/externo' },
   { id: 'P09', name: 'Analítica BI', description: 'Métricas de negocio (Proyecto 9)', status: 'pending', lastPing: '-', endpoint: 'https://analisis-proyecto-ti.onrender.com/v1/events' },

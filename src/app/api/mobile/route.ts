@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/middlewares/rateLimiter';
-import { verifyJwt } from '@/lib/jwt';
+
 import { safeNormalizeOrder } from '@/lib/normalizers/orderNormalizer';
 import { getOrderStateTransition } from '@/lib/machines/orderStateManager';
 import { initialOrderState } from '@/lib/machines/orderStateMachine';
@@ -31,8 +31,7 @@ export async function POST(request: Request) {
     }
 
     const token = authHeader.split(' ')[1];
-    const decodedToken = await verifyJwt(token);
-    const usuarioId = decodedToken.sub;
+    const usuarioId = request.headers.get('x-user-id');
 
     const contentLength = request.headers.get('content-length');
     if (contentLength && parseInt(contentLength, 10) > 1024 * 1024) { // 1MB limit

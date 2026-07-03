@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, beforeAll, afterEach, afterAll } from 'vitest';
 
-const mockVerifyJwt = vi.fn();
+
 const mockCheckRateLimit = vi.fn();
 const mockReserveStock = vi.fn();
 const mockRollbackReservations = vi.fn();
@@ -23,9 +23,7 @@ let createWebOrder: typeof import('@/app/api/web/route').POST;
 let paymentWebhookPOST: typeof import('@/app/api/webhooks/payment/route').POST;
 
 beforeAll(async () => {
-  vi.doMock('@/lib/jwt', () => ({
-    verifyJwt: mockVerifyJwt,
-  }));
+
 
   vi.doMock('@/lib/middlewares/rateLimiter', () => ({
     checkRateLimit: mockCheckRateLimit,
@@ -65,7 +63,7 @@ afterAll(() => {
 
 describe('Flujos felices con servicios externos mockeados', () => {
   beforeEach(() => {
-    mockVerifyJwt.mockResolvedValue({ sub: 'test-user', role: 'user' });
+
     mockCheckRateLimit.mockResolvedValue(true);
     mockPublishOrderStateChange.mockResolvedValue(undefined);
   });
@@ -93,6 +91,8 @@ describe('Flujos felices con servicios externos mockeados', () => {
       headers: {
         'Content-Type': 'application/json',
         Authorization: 'Bearer test-token',
+        'x-user-id': 'test-user',
+        'x-user-roles': JSON.stringify(['user']),
       },
       body: JSON.stringify(body),
     });
@@ -109,7 +109,7 @@ describe('Flujos felices con servicios externos mockeados', () => {
       }),
     );
 
-    expect(mockVerifyJwt).toHaveBeenCalledWith('test-token');
+
     expect(mockCheckRateLimit).toHaveBeenCalled();
     expect(mockReserveStock).toHaveBeenCalled();
     expect(mockPersistOrder).toHaveBeenCalled();

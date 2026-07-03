@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/middlewares/rateLimiter';
-import { verifyJwt } from '@/lib/jwt';
+
 import { safeNormalizeOrder } from '@/lib/normalizers/orderNormalizer';
 import { getOrderStateTransition } from '@/lib/machines/orderStateManager';
 import { initialOrderState } from '@/lib/machines/orderStateMachine';
@@ -42,10 +42,16 @@ export async function POST(request: Request) {
     }
 
     const token = authHeader.split(' ')[1];
-    const decodedToken = await verifyJwt(token);
+    const rolesHeader = request.headers.get('x-user-roles') || '[]';
+    let roles: string[] = [];
+    try {
+      roles = JSON.parse(rolesHeader);
+    } catch (e) {
+      roles = [];
+    }
 
     // Solo agentes de call center (rol 'agent' o 'admin') pueden usar este endpoint
-    if (decodedToken.role !== 'agent' && decodedToken.role !== 'admin') {
+    if (!roles.includes('agent') && !roles.includes('admin')) {
       return NextResponse.json(
         { error: 'Acceso denegado. Se requiere rol de agente.' },
         { status: 403 },
