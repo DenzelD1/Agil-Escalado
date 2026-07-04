@@ -10,7 +10,9 @@ async function main() {
       prioridad: 'baja' as const,
       sistema_origen: 'pedidos' as const,
       sistema_id: 'P03' as const,
-      cliente_id: 9999, // Mock ID
+      cliente_nombre: 'Usuario Test',
+      cliente_email: 'test@example.com',
+      cliente_telefono: '+56900000000',
       pedido_id_ref: 'ORDER-TEST-007'
     };
 

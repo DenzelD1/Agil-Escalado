@@ -22,7 +22,9 @@ export interface CreateTicketPayload {
   prioridad: 'baja' | 'media' | 'alta' | 'critica';
   sistema_origen: 'pedidos';
   sistema_id: 'P03';
-  cliente_id?: number;
+  cliente_nombre: string;
+  cliente_email: string;
+  cliente_telefono?: string;
   pedido_id_ref?: string;
   suscripcion_id_ref?: string;
   contexto?: string;

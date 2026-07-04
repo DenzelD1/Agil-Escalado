@@ -104,6 +104,9 @@ export async function POST(request: Request) {
           prioridad: 'alta',
           sistema_origen: 'pedidos',
           sistema_id: 'P03',
+          cliente_nombre: pedidoNormalizado.cliente.nombre,
+          cliente_email: pedidoNormalizado.cliente.email,
+          cliente_telefono: pedidoNormalizado.cliente.telefono || undefined,
           pedido_id_ref: pedidoNormalizado.id_pedido,
         }).catch(e => console.error("Error creando ticket CRM por stock insuficiente", e));
 
