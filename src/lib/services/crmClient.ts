@@ -38,11 +38,15 @@ export interface TicketResponse {
     estado: string;
     prioridad: string;
     canal: string;
-    cliente_id: number | null;
-    agente_id: string | null;
+    cliente_id?: number | null;
+    cliente_nombre: string;
+    agente_id?: string | null;
+    resolucion?: string | null;
     fecha_vencimiento_sla: string;
     pedido_id_ref: string | null;
     suscripcion_id_ref: string | null;
+    pago_id_ref: string | null;
+    salud_ref: string | null;
     creado_en: string;
     actualizado_en: string;
   };
@@ -66,6 +70,26 @@ export async function createSupportTicket(
     const errorBody = await response.text().catch(() => '');
     throw new Error(
       `[CRMClient] Error al crear ticket (HTTP ${response.status}): ${errorBody}`,
+    );
+  }
+
+  return response.json();
+}
+
+export async function getSupportTicketStatus(ticketId: string): Promise<TicketResponse> {
+  const url = `${CRM_BASE_URL()}/api/v1/tickets/externo/${ticketId}?api_key=${CRM_API_KEY()}`;
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => '');
+    throw new Error(
+      `[CRMClient] Error al consultar ticket (HTTP ${response.status}): ${errorBody}`,
     );
   }
 

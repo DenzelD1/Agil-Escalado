@@ -16,14 +16,8 @@ export async function GET(
       );
     }
 
-    const authHeader = request.headers.get('authorization');
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'No autorizado. Faltan credenciales.' },
-        { status: 401 }
-      );
-    }
+    // El middleware se encarga de la validación de JWT o de la API Key.
+    // Si la request llega aquí, es que está autorizada.
 
     const { id } = await params;
 

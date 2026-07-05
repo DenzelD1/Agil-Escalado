@@ -10,7 +10,23 @@ const ISSUER = 'https://underarm-those-stardust.ngrok-free.dev/realms/sistema-ce
 const JWKS = createRemoteJWKSet(new URL(JWKS_URI));
 
 export async function middleware(request: NextRequest) {
-  // Extraer el token del header Authorization
+  // 1. Verificación de API Key externa (M2M)
+  const apiKey = request.headers.get('x-api-key');
+  const expectedApiKey = process.env.P07_API_KEY;
+
+  if (apiKey && expectedApiKey && apiKey === expectedApiKey) {
+    // Es una petición válida de un sistema externo, saltamos la validación JWT
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('x-user-roles', JSON.stringify(['sistema-externo']));
+    
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
+  }
+
+  // 2. Extraer el token del header Authorization (Flujo JWT)
   const authHeader = request.headers.get('authorization');
   let token: string | undefined;
 

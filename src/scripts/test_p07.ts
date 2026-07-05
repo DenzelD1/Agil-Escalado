@@ -1,4 +1,4 @@
-import { createSupportTicket } from '../lib/services/crmClient';
+import { createSupportTicket, getSupportTicketStatus } from '../lib/services/crmClient';
 
 async function main() {
   console.log('--- Iniciando Test Específico: Proyecto 7 (CRM y Clientes) ---');
@@ -21,8 +21,18 @@ async function main() {
     const result = await createSupportTicket(payload);
 
     if (result && result.ok) {
-      console.log('✅ Conexión con P07 Exitosa.');
+      console.log('✅ Conexión con P07 Exitosa (Creación).');
       console.log('Ticket creado en el CRM:', JSON.stringify(result.ticket, null, 2));
+
+      console.log(`\nConsultando estado del ticket ${result.ticket.id}...`);
+      const statusResult = await getSupportTicketStatus(result.ticket.id);
+      if (statusResult && statusResult.ok) {
+        console.log('✅ Consulta de estado Exitosa.');
+        console.log('Estado actual del ticket:', statusResult.ticket.estado);
+        console.log('Detalle completo del estado:', JSON.stringify(statusResult.ticket, null, 2));
+      } else {
+        console.log('❌ Falló la consulta de estado (Respuesta no OK).');
+      }
     } else {
       console.log('❌ Falló la conexión con P07 (Respuesta no OK).');
       console.log('Detalles:', JSON.stringify(result, null, 2));
