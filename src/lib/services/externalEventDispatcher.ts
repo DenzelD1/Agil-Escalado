@@ -41,35 +41,22 @@ export async function dispatchExternalEvent(
   const token = await generateSystemToken();
   const payload = JSON.stringify(event);
 
-  let attempt = 0;
-  
-  while (attempt <= maxRetries) {
-    try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: payload,
-      });
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: payload,
+    });
 
-      if (res.ok) {
-        return; // Éxito
-      }
-      
-      console.warn(`[ExternalEventDispatcher] Fallo al enviar evento ${event.event_type} (HTTP ${res.status}). Intento ${attempt + 1}/${maxRetries + 1}`);
-    } catch (err) {
-      console.warn(`[ExternalEventDispatcher] Error de red al enviar evento ${event.event_type}:`, err);
+    if (res.ok) {
+      return; // Éxito
     }
-
-    attempt++;
-    if (attempt <= maxRetries) {
-      // Exponential backoff
-      const delayMs = Math.pow(2, attempt - 1) * 1000;
-      await new Promise(resolve => setTimeout(resolve, delayMs));
-    }
+    
+    console.warn(`[ExternalEventDispatcher] Fallo al enviar evento ${event.event_type} (HTTP ${res.status}).`);
+  } catch (err) {
+    console.warn(`[ExternalEventDispatcher] Error de red al enviar evento ${event.event_type}:`, err);
   }
-
-  console.error(`[ExternalEventDispatcher] FALLO CATASTRÓFICO: No se pudo enviar el evento ${event.event_type} tras ${maxRetries + 1} intentos.`);
 }

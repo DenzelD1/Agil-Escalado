@@ -6,15 +6,30 @@ import { sendNotification } from '@/lib/services/notificationClient';
 import { sendOrderToLogistics } from '@/lib/services/shipmentClient';
 import { dispatchExternalEvent } from '@/lib/services/externalEventDispatcher';
 
+import { z } from 'zod';
+
+const PaymentWebhookSchema = z.object({
+  idOrden: z.string().min(1, "idOrden es requerido"),
+  status: z.enum(['APROBADO', 'RECHAZADO']).optional(),
+  event: z.enum(['transaction.approved', 'transaction.rejected']).optional(),
+  transactionId: z.string().optional(),
+  reason: z.string().optional()
+}).refine(data => data.status || data.event, {
+  message: "Debe proveer status o event",
+});
+
 export async function POST(request: Request) {
   try {
-    const payload = await request.json();
+    const rawPayload = await request.json();
     
-    const { idOrden, status, event, transactionId, reason } = payload;
-
-    if (!idOrden || !status) {
-      return NextResponse.json({ error: "Faltan campos requeridos (idOrden, status)" }, { status: 400 });
+    // Validación con Zod
+    const validationResult = PaymentWebhookSchema.safeParse(rawPayload);
+    if (!validationResult.success) {
+      console.warn("[WebhookPago] Payload inválido:", validationResult.error.format());
+      return NextResponse.json({ error: "Faltan campos requeridos o son inválidos", detalles: validationResult.error.format() }, { status: 400 });
     }
+
+    const { idOrden, status, event, transactionId, reason } = validationResult.data;
 
     const pedido = await prisma.order.findUnique({
       where: { id: idOrden },

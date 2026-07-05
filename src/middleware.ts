@@ -3,11 +3,12 @@ import type { NextRequest } from 'next/server';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 // Configuraciones del proveedor de identidad basadas en el Proyecto 12
-const JWKS_URI = 'https://underarm-those-stardust.ngrok-free.dev/realms/sistema-centralizado/protocol/openid-connect/certs';
-const ISSUER = 'https://underarm-those-stardust.ngrok-free.dev/realms/sistema-centralizado';
+const JWKS_URI = process.env.JWKS_URI || '';
+const ISSUER = process.env.JWT_ISSUER || '';
 
 // createRemoteJWKSet almacena en caché las claves JWKS de forma automática
-const JWKS = createRemoteJWKSet(new URL(JWKS_URI));
+// Solo inicializamos si hay una URI válida (evitamos errores fatales si la var no está)
+const JWKS = JWKS_URI ? createRemoteJWKSet(new URL(JWKS_URI)) : null;
 
 export async function middleware(request: NextRequest) {
   // 1. Verificación de API Key externa (M2M)
@@ -53,6 +54,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.json(
       { error: 'No autorizado: Token faltante' },
       { status: 401 }
+    );
+  }
+
+  if (!JWKS) {
+    console.error('Error: JWKS_URI no configurado en entorno.');
+    return NextResponse.json(
+      { error: 'Configuración de seguridad incompleta' },
+      { status: 500 }
     );
   }
 

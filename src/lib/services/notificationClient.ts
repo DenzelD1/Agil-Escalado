@@ -12,19 +12,29 @@ export interface NotificationPayload {
 }
 
 // URL y la llave que te dieron
-const NOTIFICATION_URL = 'https://ucn-agil-notificaciones.up.railway.app/notifications/send';
-const API_KEY = '7KpQmXvRnB2sYwZ9eHtJdF5gCuA3LiN8'; 
+const NOTIFICATION_URL = () => {
+  return process.env.NOTIFICATION_API_URL || 'https://ucn-agil-notificaciones.up.railway.app/notifications/send';
+};
+
+const API_KEY = () => {
+  const key = process.env.NOTIFICATION_API_KEY;
+  if (!key) {
+    console.warn("ADVERTENCIA: NOTIFICATION_API_KEY no está configurada en las variables de entorno.");
+    return '';
+  }
+  return key;
+};
 
 // Ffunción que envía los datos
 export async function sendNotification(payload: NotificationPayload) {
   try {
-    const response = await fetch(NOTIFICATION_URL, {
+    const response = await fetch(NOTIFICATION_URL(), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         // Generalmente las API keys se envían en el header 'x-api-key' o 'Authorization'.
         // Si te da error de autenticación, cámbialo a: 'Authorization': `Bearer ${API_KEY}`
-        'x-api-key': API_KEY, 
+        'x-api-key': API_KEY(), 
       },
       body: JSON.stringify(payload),
     });

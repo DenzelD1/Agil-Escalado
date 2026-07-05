@@ -13,7 +13,12 @@ const CRM_BASE_URL = () => {
 };
 
 const CRM_API_KEY = () => {
-  return process.env.CRM_API_KEY || 'pedidos_secret_p03';
+  const key = process.env.CRM_API_KEY;
+  if (!key) {
+    console.warn("ADVERTENCIA: CRM_API_KEY no está configurada en las variables de entorno.");
+    return '';
+  }
+  return key;
 };
 
 export interface CreateTicketPayload {

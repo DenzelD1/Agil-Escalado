@@ -4,16 +4,27 @@ import { getOrderStateTransition } from '@/lib/machines/orderStateManager';
 import { type OrderStatus } from '@/lib/machines/orderStateMachine';
 import { dispatchExternalEvent } from '@/lib/services/externalEventDispatcher';
 
+import { z } from 'zod';
+
+const ShipmentWebhookSchema = z.object({
+  orderId: z.string().min(1, "orderId es requerido"),
+  status: z.enum(['ready_for_dispatch', 'in_transit', 'delivered']),
+  trackingNumber: z.string().optional(),
+  timestamp: z.string().optional(), // ISO date string
+});
+
 export async function POST(request: Request) {
   try {
-    const { orderId, status, trackingNumber, timestamp } = await request.json();
-
-    if (!orderId || !status) {
-      return NextResponse.json(
-        { error: 'Faltan campos requeridos: orderId, status' },
-        { status: 400 },
-      );
+    const rawPayload = await request.json();
+    
+    // Validación con Zod
+    const validationResult = ShipmentWebhookSchema.safeParse(rawPayload);
+    if (!validationResult.success) {
+      console.warn("[WebhookLogistica] Payload inválido:", validationResult.error.format());
+      return NextResponse.json({ error: "Faltan campos requeridos o son inválidos", detalles: validationResult.error.format() }, { status: 400 });
     }
+
+    const { orderId, status, trackingNumber, timestamp } = validationResult.data;
 
     const order = await prisma.order.findUnique({
       where: { id: orderId },
