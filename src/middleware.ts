@@ -11,10 +11,16 @@ const JWKS = createRemoteJWKSet(new URL(JWKS_URI));
 
 export async function middleware(request: NextRequest) {
   // 1. Verificación de API Key externa (M2M)
-  const apiKey = request.headers.get('x-api-key');
-  const expectedApiKey = process.env.P07_API_KEY;
+  const apiKey = request.headers.get('x-api-key') || request.headers.get('x_api_key');
+  
+  // Lista de API Keys válidas de otros proyectos (se leen de las variables de entorno)
+  const validApiKeys = [
+    process.env.P07_API_KEY, // CRM
+    process.env.P04_API_KEY, // Pagos (UCNPay)
+    // process.env.P02_API_KEY, // Logística (Simulado, comentado por ahora)
+  ].filter(Boolean); // Filtramos los undefined si no están configuradas
 
-  if (apiKey && expectedApiKey && apiKey === expectedApiKey) {
+  if (apiKey && validApiKeys.includes(apiKey)) {
     // Es una petición válida de un sistema externo, saltamos la validación JWT
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set('x-user-roles', JSON.stringify(['sistema-externo']));
