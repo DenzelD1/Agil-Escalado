@@ -24,7 +24,7 @@ async function main() {
       console.log('Respuesta del servidor:', JSON.stringify(result.data, null, 2));
     } else {
       console.log('❌ Falló la conexión o la operación con P06.');
-      console.log('Detalles del error:', result.error?.message || result.error);
+      console.log('Detalles del error:', (result.error as any)?.message || result.error);
     }
   } catch (error) {
     console.error('Error en el test de P06:', error);
