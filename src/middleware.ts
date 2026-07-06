@@ -11,6 +11,11 @@ const ISSUER = process.env.JWT_ISSUER || '';
 const JWKS = JWKS_URI ? createRemoteJWKSet(new URL(JWKS_URI)) : null;
 
 export async function middleware(request: NextRequest) {
+  // 0. Permitir endpoints públicos internos como el de ping
+  if (request.nextUrl.pathname.startsWith('/api/integrations/ping')) {
+    return NextResponse.next();
+  }
+
   // 1. Verificación de API Key externa (M2M)
   const apiKey = request.headers.get('x-api-key') || request.headers.get('x_api_key');
   

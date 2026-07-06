@@ -53,7 +53,9 @@ export default function IntegrationNetwork() {
       
       setNodes(current => current.map(node => {
         if (node.id === id) {
-          return { ...node, status: data.status, lastPing: 'Justo ahora' };
+          // Fallback a 'down' si la API no devuelve un status válido (ej. errores 401 del middleware)
+          const newStatus = data.status && statusConfig[data.status as IntegrationStatus] ? data.status : 'down';
+          return { ...node, status: newStatus, lastPing: 'Justo ahora' };
         }
         return node;
       }));
