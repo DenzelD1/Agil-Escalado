@@ -9,7 +9,7 @@ Para que nuestro sistema pueda enviarle datos o pedirles acciones a otros proyec
 
 | Proyecto | Estado en nuestro código | ¿Qué nos falta o debemos validar? |
 | :--- | :--- | :--- |
-| **P04 (Pagos)** | Tenemos el cliente `paymentClient.ts` y una llave en `.env.local` (`UCNPAY_PRIVATE_KEY`). | ❓ **Falta la URL de Producción de Pagos**. Actualmente no veo una variable como `API_PAGOS_URL` en tu `.env.local`. Necesitamos saber a qué URL le vamos a pegar para iniciar un cobro. |
+| **P04 (Pagos)** | 🟢 Completo. Tenemos el cliente `paymentClient.ts` y sus variables (`UCNPAY_PRIVATE_KEY` y `API_PAGOS_URL`) configuradas en `.env.local`. | Ninguna acción requerida. Ya contamos con la URL de producción. |
 | **P02 (Logística)** | 🟢 **Simulado**. Como este proyecto no existe, usamos nuestro modo simulación (`SIMULAR_LOGISTICA='true'`). | Ninguna acción requerida, todo opera con datos mock locales. |
 | **P05 (Inventario)** | 🟢 Completo. Tenemos su URL (`proyectogestordeinventario-production.up.railway.app`) y la API Key en `.env.local`. | Ninguna acción requerida por ahora. |
 | **P06 (Notificaciones)** | 🟢 Completo. Tenemos la URL y la API Key configuradas directo en `notificationClient.ts`. | Ninguna acción requerida, a menos que cambien sus llaves. |
@@ -25,7 +25,7 @@ Otros proyectos necesitan enviarnos información (ej. avisarnos que un pago pas�
 | Proyecto | Lo que esperan de nosotros | Estado actual | ¿Qué nos falta informarles/pedirles? |
 | :--- | :--- | :--- | :--- |
 | **P07 (CRM)** | Consultar información de un pedido. | 🟢 Completo. Ya les dimos el endpoint `GET /api/orders/{id}` y su API Key (`P07_API_KEY`). | Nada, ya se lo enviamos. |
-| **P04 (Pagos)** | Avisarnos si un pago fue exitoso o rechazado (Webhook). | 🟢 Listo por nuestro lado. Habilitamos `P04_API_KEY` en el middleware. Tenemos el webhook `/api/webhooks/payment`. | ❓ **Entregar URL y Key a P04:** Avisarle a Pagos que nuestra URL es `https://agil-escalado.vercel.app/api/webhooks/payment` y deben enviar su `x-api-key`. También preguntar qué JSON nos enviarán. |
+| **P04 (Pagos)** | Avisarnos si un pago fue exitoso o rechazado (Webhook). | 🟢 Completo. Habilitamos `P04_API_KEY` en el middleware y validamos su JSON contra nuestro webhook (`/api/webhooks/payment`). | Ninguna acción requerida. Ya confirmamos la estructura del JSON (ya es compatible). |
 | **P02 (Logística)** | Avisarnos cuando el pedido cambia de estado en tránsito o entregado (Webhook). | 🟢 **Simulado**. Este proyecto no fue asignado, así que no nos harán peticiones externas de webhook. | Ninguna acción requerida. |
 | **P12 (Identidad)** | Validar tokens JWT. | 🟢 Completo. Nuestro `middleware.ts` ya consulta sus llaves públicas (JWKS). | Nada, ya funciona. |
 
