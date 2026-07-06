@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/middlewares/rateLimiter';
-
+import { verifyJwt } from '@/lib/jwt';
 import { safeNormalizeOrder } from '@/lib/normalizers/orderNormalizer';
 import { getOrderStateTransition } from '@/lib/machines/orderStateManager';
 import { initialOrderState } from '@/lib/machines/orderStateMachine';
@@ -9,7 +9,6 @@ import { persistOrder } from '@/lib/services/orderPersistence';
 import { initiatePayment } from '@/lib/services/paymentClient';
 import { dispatchExternalEvent } from '@/lib/services/externalEventDispatcher';
 import { createSupportTicket } from '@/lib/services/crmClient';
-import { sendNotification } from '@/lib/services/notificationClient';
 
 export async function POST(request: Request) {
   try {
@@ -32,7 +31,8 @@ export async function POST(request: Request) {
     }
 
     const token = authHeader.split(' ')[1];
-    const usuarioId = request.headers.get('x-user-id');
+    const decodedToken = await verifyJwt(token);
+    const usuarioId = decodedToken.sub;
 
     const contentLength = request.headers.get('content-length');
     if (contentLength && parseInt(contentLength, 10) > 1024 * 1024) { // 1MB limit
@@ -105,21 +105,8 @@ export async function POST(request: Request) {
           prioridad: 'alta',
           sistema_origen: 'pedidos',
           sistema_id: 'P03',
-          cliente_nombre: pedidoNormalizado.cliente.nombre,
-          cliente_email: pedidoNormalizado.cliente.email,
-          cliente_telefono: pedidoNormalizado.cliente.telefono || undefined,
           pedido_id_ref: pedidoNormalizado.id_pedido,
         }).catch(e => console.error("Error creando ticket CRM por stock insuficiente", e));
-
-        // [PROYECTO 9 - ANALÍTICA] Evento de stock agotado
-        dispatchExternalEvent({
-          source: 'orders',
-          event_type: 'stock_agotado',
-          payload: {
-            order_id: pedidoNormalizado.id_pedido,
-            customer_id: pedidoNormalizado.cliente?.email || 'desconocido',
-          }
-        }).catch(e => console.error("Error despachando evento stock_agotado", e));
       }
 
       const statusCode =
@@ -156,17 +143,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // [PROYECTO 9 - ANALÍTICA] Evento de stock reservado
-    dispatchExternalEvent({
-      source: 'orders',
-      event_type: 'stock_reservado',
-      payload: {
-        order_id: pedidoPersistido.id,
-        customer_id: pedidoNormalizado.cliente?.email || 'desconocido',
-      }
-    }).catch(e => console.error("Error despachando evento stock_reservado", e));
-
-    // [PROYECTO 9 - ANALÍTICA] Evento de pedido creado
+    // Notificar a Analítica (Proyecto 6)
     dispatchExternalEvent({
       source: 'orders',
       event_type: 'pedido_creado',
@@ -185,20 +162,6 @@ export async function POST(request: Request) {
       pedidoNormalizado.total,
       { cliente: pedidoNormalizado.cliente },
     );
-
-    // Notificaciones, conexión con proyecto 6
-    sendNotification({
-      channel: "email",
-      recipient: {
-        email: pedidoNormalizado.cliente.email,
-        telefono: pedidoNormalizado.cliente.telefono || undefined
-      },
-      subject: `Confirmación de tu pedido #${pedidoPersistido.id}`,
-      body: {
-        email: `<p>Hola ${pedidoNormalizado.cliente.nombre}, hemos recibido tu pedido con éxito y ya lo estamos preparando.</p>`,
-        sms: `UCN: Hola ${pedidoNormalizado.cliente.nombre}, tu pedido ha sido confirmado.`
-      }
-    }).catch(e => console.error("Error enviando notificación al Proy 6:", e));
 
     return NextResponse.json(
       {

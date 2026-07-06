@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/middlewares/rateLimiter';
-
+import { verifyJwt } from '@/lib/jwt';
 import { safeNormalizeOrder } from '@/lib/normalizers/orderNormalizer';
 import { getOrderStateTransition } from '@/lib/machines/orderStateManager';
 import { initialOrderState } from '@/lib/machines/orderStateMachine';
@@ -42,16 +42,10 @@ export async function POST(request: Request) {
     }
 
     const token = authHeader.split(' ')[1];
-    const rolesHeader = request.headers.get('x-user-roles') || '[]';
-    let roles: string[] = [];
-    try {
-      roles = JSON.parse(rolesHeader);
-    } catch (e) {
-      roles = [];
-    }
+    const decodedToken = await verifyJwt(token);
 
     // Solo agentes de call center (rol 'agent' o 'admin') pueden usar este endpoint
-    if (!roles.includes('agent') && !roles.includes('admin')) {
+    if (decodedToken.role !== 'agent' && decodedToken.role !== 'admin') {
       return NextResponse.json(
         { error: 'Acceso denegado. Se requiere rol de agente.' },
         { status: 403 },
@@ -163,21 +157,8 @@ export async function POST(request: Request) {
           prioridad: 'alta',
           sistema_origen: 'pedidos',
           sistema_id: 'P03',
-          cliente_nombre: pedidoNormalizado.cliente.nombre,
-          cliente_email: pedidoNormalizado.cliente.email,
-          cliente_telefono: pedidoNormalizado.cliente.telefono || undefined,
           pedido_id_ref: pedidoNormalizado.id_pedido,
         }).catch(e => console.error("Error creando ticket CRM por stock insuficiente", e));
-
-        // [PROYECTO 9 - ANALÍTICA] Evento de stock agotado
-        dispatchExternalEvent({
-          source: 'orders',
-          event_type: 'stock_agotado',
-          payload: {
-            order_id: pedidoNormalizado.id_pedido,
-            customer_id: pedidoNormalizado.cliente?.email || 'desconocido',
-          }
-        }).catch(e => console.error("Error despachando evento stock_agotado", e));
       }
 
       const statusCode =
@@ -215,17 +196,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // [PROYECTO 9 - ANALÍTICA] Evento de stock reservado
-    dispatchExternalEvent({
-      source: 'orders',
-      event_type: 'stock_reservado',
-      payload: {
-        order_id: pedidoPersistido.id,
-        customer_id: pedidoNormalizado.cliente?.email || 'desconocido',
-      }
-    }).catch(e => console.error("Error despachando evento stock_reservado", e));
-
-    // [PROYECTO 9 - ANALÍTICA] Evento de pedido creado
+    // Notificar a Analítica (Proyecto 6)
     dispatchExternalEvent({
       source: 'orders',
       event_type: 'pedido_creado',

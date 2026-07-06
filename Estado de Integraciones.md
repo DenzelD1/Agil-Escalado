@@ -28,3 +28,48 @@ Otros proyectos necesitan enviarnos información (ej. avisarnos que un pago pas�
 | **P04 (Pagos)** | Avisarnos si un pago fue exitoso o rechazado (Webhook). | 🟢 Listo por nuestro lado. Habilitamos `P04_API_KEY` en el middleware. Tenemos el webhook `/api/webhooks/payment`. | ❓ **Entregar URL y Key a P04:** Avisarle a Pagos que nuestra URL es `https://agil-escalado.vercel.app/api/webhooks/payment` y deben enviar su `x-api-key`. También preguntar qué JSON nos enviarán. |
 | **P02 (Logística)** | Avisarnos cuando el pedido cambia de estado en tránsito o entregado (Webhook). | 🟢 **Simulado**. Este proyecto no fue asignado, así que no nos harán peticiones externas de webhook. | Ninguna acción requerida. |
 | **P12 (Identidad)** | Validar tokens JWT. | 🟢 Completo. Nuestro `middleware.ts` ya consulta sus llaves públicas (JWKS). | Nada, ya funciona. |
+
+---
+
+## Cambios recientes (Resumen de implementación)
+
+Fecha: 2026-07-06
+
+- **Objetivo:** panel de estado en tiempo real para las integraciones, con indicadores visuales y logs sólo para pruebas manuales.
+
+- **Backend**:
+	- `src/app/api/integrations/ping/route.ts` — Endpoint `POST /api/integrations/ping` que comprueba un endpoint externo y responde JSON con `{ id, status, statusCode, elapsed, error }`.
+	- `src/app/api/integrations/stream/route.ts` — Endpoint SSE `GET /api/integrations/stream` que emite snapshots y actualizaciones periódicas de probes.
+
+- **Frontend**:
+	- `src/components/IntegrationNetwork.tsx` — Consume el SSE y muestra tarjetas por nodo. Cambios principales:
+		- Visual simple: sólo dos estados visibles para el usuario final: **Conectado** (verde) o **Desconectado** (rojo).
+		- Los logs de conexión se registran únicamente cuando el usuario pulsa `Probar` (manual). Los probes automáticos del SSE ya no se agregan a los logs para evitar ruido.
+		- Las entradas del modal `Logs` muestran un punto de color (verde/rojo) y etiqueta descriptiva según el resultado de la prueba.
+		- El botón `Probar` hace `POST /api/integrations/ping` y guarda la entrada en `Logs` coloreada según éxito/fallo.
+
+- **Middleware**:
+	- `src/middleware.ts` adaptado para permitir el acceso a las rutas de integraciones (`/api/integrations/*`) sin bloquear con autenticación cuando corresponde.
+
+- **Tests**:
+	- `tests/api/ping.route.test.ts` — Pruebas unitarias del endpoint `ping` (healthy/degraded/down). Tests añadidos y ejecutados localmente (pasaron).
+
+- **Cómo probar localmente**:
+	1. Levanta el servidor de desarrollo:
+		 ```bash
+		 npm run dev
+		 ```
+	2. Abrir el dashboard de integraciones en el navegador (por ejemplo `http://localhost:3000/dashboard` o la ruta del componente).
+	3. Pulsar `Probar` en cualquier nodo: la entrada aparecerá en `Logs` con punto verde si fue exitosa o rojo si falló.
+	4. También puedes ejecutar el `ping` directamente desde terminal:
+		 ```bash
+		 curl -s -X POST http://localhost:3000/api/integrations/ping \
+			 -H "Content-Type: application/json" \
+			 -d '{"id":"P04","endpoint":"https://example.com/"}' | jq
+		 ```
+
+- **Notas y decisiones importantes**:
+	- Se simplificó la visualización para evitar alarmismo: sólo verde/rojo para el usuario final.
+	- Los probes automáticos no se añaden a los logs para evitar entradas constantes; los probes siguen llegando vía SSE para actualizar el estado, pero no saturan el historial.
+	- Si prefieres volver a la lógica previa (hysteresis antes de marcar `down`), o permitir que se registren probes automáticos en un histórico separado, puedo revertir o adaptar según prefieras.
+
