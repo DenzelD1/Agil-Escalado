@@ -11,8 +11,8 @@ const ISSUER = process.env.JWT_ISSUER || '';
 const JWKS = JWKS_URI ? createRemoteJWKSet(new URL(JWKS_URI)) : null;
 
 export async function middleware(request: NextRequest) {
-  // 0. Permitir endpoints públicos internos como el de ping
-  if (request.nextUrl.pathname.startsWith('/api/integrations/ping')) {
+  // 0. Permitir endpoints públicos internos del submódulo de integraciones (ping, stream)
+  if (request.nextUrl.pathname.startsWith('/api/integrations')) {
     return NextResponse.next();
   }
 

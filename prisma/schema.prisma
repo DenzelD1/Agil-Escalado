@@ -2,16 +2,46 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
 }
 
-// ---------------------------------------------------------------------------
-// Cliente
-// ---------------------------------------------------------------------------
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum OrderStatus {
+  CREADO
+  PROCESANDO
+  CONFIRMADO
+  PAGADO
+  ENVIADO
+  ENTREGADO
+  CANCELADO
+  ERROR
+}
+
+enum OrderPriority {
+  BAJA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+enum OrderChannel {
+  WEB
+  MOBILE
+  CALLCENTER
+}
+
+// ============================================================================
+// MODELS
+// ============================================================================
+
 model Client {
   id        String   @id @default(uuid())
   nombre    String
@@ -20,91 +50,76 @@ model Client {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Relations
   orders    Order[]
   addresses Address[]
+
+  @@index([email])
 }
 
-// ---------------------------------------------------------------------------
-// Dirección de envío
-// ---------------------------------------------------------------------------
 model Address {
-  id               String  @id @default(uuid())
+  id               String   @id @default(uuid())
+  clientId         String
   calle            String
   numero           String
   ciudad           String
   region           String?
   codigoPostal     String?
-  pais             String  @default("CHILE")
+  pais             String   @default("Chile")
   notasAdicionales String?
+  esDirectionPrincipal Boolean @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  clienteId String?
-  cliente   Client? @relation(fields: [clienteId], references: [id])
+  // Relations
+  cliente          Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  ordenes          Order[]
 
-  orders Order[]
-
-  @@index([clienteId])
+  @@index([clientId])
 }
 
-// ---------------------------------------------------------------------------
-// Pedido
-// ---------------------------------------------------------------------------
 model Order {
-  id         String   @id @default(uuid())
-  idCanal    String
-  tipoCanal  String
-  estado     String   @default("creado")
-  prioridad  String   @default("media")
-  subtotal   Float
-  impuestos  Float
-  total      Float
-  agenteId   String?
-  intentosPago Int      @default(0)
-  motivoRechazo String?
-  recibidoEn DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id              String        @id @default(uuid())
+  idCanal         String        @unique
+  tipoCanal       OrderChannel
+  clienteId       String
+  direccionId     String
+  subtotal        Float
+  impuestos       Float
+  total           Float
+  estado          OrderStatus   @default(CREADO)
+  prioridad       OrderPriority @default(MEDIA)
+  recibidoEn      DateTime      @default(now())
+  procesadoEn     DateTime?
+  notas           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
-  clienteId String
-  cliente   Client @relation(fields: [clienteId], references: [id])
-
-  direccionId String
-  direccion   Address @relation(fields: [direccionId], references: [id])
-
-  items             Item[]
-  stockReservations StockReservation[]
+  // Relations
+  cliente         Client        @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  direccionEnvio  Address       @relation(fields: [direccionId], references: [id], onDelete: Cascade)
+  items           Item[]
 
   @@index([clienteId])
   @@index([direccionId])
   @@index([estado])
+  @@index([recibidoEn])
 }
 
-// ---------------------------------------------------------------------------
-// Ítem del pedido (SKU)
-// ---------------------------------------------------------------------------
 model Item {
-  id             String @id @default(uuid())
+  id             String   @id @default(uuid())
+  orderId        String
   sku            String
   cantidad       Int
   precioUnitario Float
-  descuento      Float  @default(0)
+  descuento      Float    @default(0)
+  subtotal       Float    // precio unitario * cantidad - descuento
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  orderId String
-  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  @@index([orderId])
-}
-
-// ---------------------------------------------------------------------------
-// Reserva de stock (referencia al servicio de inventario externo)
-// ---------------------------------------------------------------------------
-model StockReservation {
-  id        String   @id @default(uuid())
-  sku       String
-  cantidad  Int
-  reservaId String
-  createdAt DateTime @default(now())
-
-  orderId String
-  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  // Relations
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
+  @@index([sku])
 }
