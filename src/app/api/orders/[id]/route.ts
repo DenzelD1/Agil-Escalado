@@ -75,6 +75,7 @@ export async function GET(
       } : null,
       items: order.items ? order.items.map(item => ({
         sku: item.sku,
+        nombre_producto: `Producto ${item.sku}`,
         cantidad: item.cantidad,
         precio_unitario: item.precioUnitario,
         descuento: item.descuento,
