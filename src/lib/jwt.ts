@@ -1,11 +1,10 @@
 import { jwtVerify } from 'jose';
 
-// Obtiene la clave secreta desde las variables de entorno
 const getJwtSecret = () => {
   const secret = process.env.JWT_SECRET;
   if (!secret || secret.length === 0) {
-    console.warn("ADVERTENCIA: JWT_SECRET no está definido. La validación de tokens fallará.");
-    return new Uint8Array(0);
+    console.error("ERROR CRÍTICO: JWT_SECRET no está definido. Deteniendo validación por seguridad.");
+    throw new Error('Configuración del sistema incompleta (JWT_SECRET)');
   }
   return new TextEncoder().encode(secret);
 };
