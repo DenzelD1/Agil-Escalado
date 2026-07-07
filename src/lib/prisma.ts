@@ -1,23 +1,19 @@
 import { PrismaClient } from "@/generated/prisma/client";
-import { createClient } from "@libsql/client";
-import { PrismaLibSql } from "@prisma/adapter-libsql";
-import path from "node:path";
-import { config } from "dotenv";
-
-config({ path: path.resolve(process.cwd(), ".env.local") });
-
-// ---------------------------------------------------------------------------
-// Singleton de PrismaClient con driver adapter para SQLite (Prisma 7)
-// ---------------------------------------------------------------------------
+import { PrismaPg } from "@prisma/adapter-pg";
+import pg from "pg";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
 function createPrismaClient(): PrismaClient {
-  const url = process.env.DATABASE_URL || "file:./dev.db";
-  const adapter = new PrismaLibSql({ url });
-  
+  const url =
+    process.env.DATABASE_URL ||
+    "postgresql://postgres:postgres@localhost:55432/agil_escalado";
+
+  const pool = new pg.Pool({ connectionString: url });
+  const adapter = new PrismaPg(pool);
+
   return new PrismaClient({ adapter });
 }
 
