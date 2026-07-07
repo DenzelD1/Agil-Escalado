@@ -51,11 +51,11 @@ export async function getDailyPerformanceReport(targetDate: Date = new Date()): 
   orders.forEach((order) => {
     porCanal[order.tipoCanal] = (porCanal[order.tipoCanal] || 0) + 1;
 
-    if (order.estado === 'rechazado') {
+    if (order.estado === 'ERROR' || order.estado === 'CANCELADO') {
       rechazadosCount++;
       const razon = order.motivoRechazo || 'Sin motivo especificado';
       rechazosPorRazon[razon] = (rechazosPorRazon[razon] || 0) + 1;
-    } else if (order.estado !== 'cancelado' && order.estado !== 'creado') {
+    } else if (order.estado !== 'CREADO') {
       aprobadosCount++;
     }
   });

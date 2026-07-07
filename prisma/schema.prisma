@@ -4,10 +4,11 @@
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
+  engineType = "library"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
 }
 
 // ============================================================================
@@ -92,6 +93,9 @@ model Order {
   recibidoEn      DateTime      @default(now())
   procesadoEn     DateTime?
   notas           String?
+  agenteId        String?
+  intentosPago    Int           @default(0)
+  motivoRechazo   String?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -99,6 +103,7 @@ model Order {
   cliente         Client        @relation(fields: [clienteId], references: [id], onDelete: Cascade)
   direccionEnvio  Address       @relation(fields: [direccionId], references: [id], onDelete: Cascade)
   items           Item[]
+  stockReservations StockReservation[]
 
   @@index([clienteId])
   @@index([direccionId])
@@ -118,6 +123,21 @@ model Item {
   updatedAt      DateTime @updatedAt
 
   // Relations
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([sku])
+}
+
+model StockReservation {
+  id             String   @id @default(uuid())
+  orderId        String
+  sku            String
+  cantidad       Int
+  reservaId      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
   order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])

@@ -7,7 +7,7 @@ config({ path: path.resolve(process.cwd(), ".env.local") });
 
 const databaseUrl =
   process.env["DATABASE_URL"] ??
-  "postgresql://postgres:postgres@localhost:5432/agil_escalado?schema=public";
+  "file:./dev.db";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",

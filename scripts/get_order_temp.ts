@@ -28,12 +28,12 @@ async function main() {
       telefono: order.cliente.telefono,
     },
     direccion_envio: {
-      calle: order.direccion.calle,
-      numero: order.direccion.numero,
-      ciudad: order.direccion.ciudad,
-      region: order.direccion.region,
-      pais: order.direccion.pais,
-      codigo_postal: order.direccion.codigoPostal,
+      calle: order.direccionEnvio.calle,
+      numero: order.direccionEnvio.numero,
+      ciudad: order.direccionEnvio.ciudad,
+      region: order.direccionEnvio.region,
+      pais: order.direccionEnvio.pais,
+      codigo_postal: order.direccionEnvio.codigoPostal,
     },
     items: order.items.map((item: any) => ({
       sku: item.sku,

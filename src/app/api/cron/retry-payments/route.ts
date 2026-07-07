@@ -10,7 +10,7 @@ export async function GET(request: Request) {
     // y no excedan el máximo de reintentos
     const failedOrders = await prisma.order.findMany({
       where: {
-        estado: 'rechazado',
+        estado: 'ERROR' as any,
         intentosPago: {
           lt: MAX_RETRIES
         },
@@ -35,12 +35,12 @@ export async function GET(request: Request) {
         await prisma.order.update({
           where: { id: order.id },
           data: {
-            estado: transition.nextState,
+            estado: transition.nextState as any,
           }
         });
         results.push({ orderId: order.id, status: 'Reintentado', nextState: transition.nextState });
 
-        console.log(`[Retry-Payment] Pedido ${order.id} reintentado (Intento ${order.intentosPago + 1}/${MAX_RETRIES})`);
+        console.log(`[Retry-Payment] Pedido ${order.id} reintentado`);
       } else {
         results.push({ orderId: order.id, status: 'Error', message: transition.message });
       }

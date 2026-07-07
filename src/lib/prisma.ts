@@ -1,10 +1,13 @@
 import { PrismaClient } from "@/generated/prisma/client";
+import { createClient } from "@libsql/client";
+import { PrismaLibSql } from "@prisma/adapter-libsql";
+import path from "node:path";
+import { config } from "dotenv";
+
+config({ path: path.resolve(process.cwd(), ".env.local") });
 
 // ---------------------------------------------------------------------------
 // Singleton de PrismaClient con driver adapter para SQLite (Prisma 7)
-//
-// En desarrollo, reutilizamos la instancia entre recargas de HMR para evitar
-// agotar las conexiones. En producción, se crea una sola instancia.
 // ---------------------------------------------------------------------------
 
 const globalForPrisma = globalThis as unknown as {
@@ -12,7 +15,10 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient(): PrismaClient {
-  return new PrismaClient({} as any);
+  const url = process.env.DATABASE_URL || "file:./dev.db";
+  const adapter = new PrismaLibSql({ url });
+  
+  return new PrismaClient({ adapter });
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();

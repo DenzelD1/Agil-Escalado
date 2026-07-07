@@ -71,7 +71,7 @@ export async function POST(request: Request) {
       eventType = 'PAGO_APROBADO';
     }
 
-    const transition = await getOrderStateTransition(order.estado as OrderStatus, {
+    const transition = await getOrderStateTransition(order.estado as any, {
       type: eventType,
       error: errorReason
     }, {
@@ -91,7 +91,7 @@ export async function POST(request: Request) {
       await prisma.order.update({
         where: { id: orderId },
         data: {
-          estado: transition.nextState,
+          estado: transition.nextState as any,
           motivoRechazo: errorReason || 'Pago rechazado por el proveedor',
           intentosPago: { increment: 1 }
         }
@@ -155,7 +155,7 @@ export async function POST(request: Request) {
       await prisma.order.update({
         where: { id: orderId },
         data: {
-          estado: transition.nextState,
+          estado: transition.nextState as any,
           motivoRechazo: null
         }
       });

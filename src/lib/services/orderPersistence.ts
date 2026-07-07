@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { NormalizedOrder } from "@/lib/normalizers/orderNormalizer";
 import type { StockReservation } from "@/lib/services/stockService";
+import { OrderChannel, OrderStatus, OrderPriority } from "@/generated/prisma/enums";
 
 // ---------------------------------------------------------------------------
 // Tipos de retorno
@@ -23,7 +24,7 @@ export interface PersistedOrder {
     email: string;
     telefono: string | null;
   };
-  direccion: {
+  direccionEnvio: {
     id: string;
     calle: string;
     numero: string;
@@ -38,6 +39,7 @@ export interface PersistedOrder {
     cantidad: number;
     precioUnitario: number;
     descuento: number;
+    subtotal: number;
   }[];
   stockReservations: {
     id: string;
@@ -95,7 +97,7 @@ export async function persistOrder(
         codigoPostal: order.direccion_envio.codigo_postal ?? null,
         pais: order.direccion_envio.pais,
         notasAdicionales: order.direccion_envio.notas_adicionales ?? null,
-        clienteId: cliente.id,
+        clientId: cliente.id,
       },
     });
 
@@ -104,9 +106,9 @@ export async function persistOrder(
       data: {
         id: order.id_pedido,
         idCanal: order.id_canal,
-        tipoCanal: order.tipo_canal,
-        estado,
-        prioridad: order.prioridad,
+        tipoCanal: order.tipo_canal.toUpperCase() as OrderChannel,
+        estado: estado.toUpperCase() as OrderStatus,
+        prioridad: order.prioridad.toUpperCase() as OrderPriority,
         subtotal: order.subtotal,
         impuestos: order.impuestos,
         total: order.total,
@@ -119,6 +121,7 @@ export async function persistOrder(
             cantidad: item.cantidad,
             precioUnitario: item.precio_unitario,
             descuento: item.descuento,
+            subtotal: item.precio_unitario * item.cantidad - item.descuento,
           })),
         },
         stockReservations: {
@@ -131,7 +134,7 @@ export async function persistOrder(
       },
       include: {
         cliente: true,
-        direccion: true,
+        direccionEnvio: true,
         items: true,
         stockReservations: true,
       },
