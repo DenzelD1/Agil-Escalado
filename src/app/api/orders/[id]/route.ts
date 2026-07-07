@@ -52,6 +52,7 @@ export async function GET(
     // Retornamos la información básica del pedido
     return NextResponse.json({
       id: order.id,
+      nombre_pedido: `Pedido ${order.idCanal}`,
       id_canal: order.idCanal,
       estado: order.estado,
       prioridad: order.prioridad,
