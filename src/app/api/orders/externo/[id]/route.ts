@@ -36,7 +36,12 @@ export async function GET(
       );
     }
 
+    const orderNumber = await prisma.order.count({
+      where: { recibidoEn: { lte: order.recibidoEn } }
+    });
+
     return NextResponse.json({
+      nombre_pedido: `Pedido ${orderNumber}`,
       id_pedido: order.id,
       id_canal: order.idCanal,
       canal: order.tipoCanal,
