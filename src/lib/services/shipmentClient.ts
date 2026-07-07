@@ -57,39 +57,46 @@ export async function sendOrderToLogistics(
   }
 
   const url = `${getLogisticsUrl()}/api/v1/shipments`;
+  let attempt = 0;
 
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        orderId: payload.orderId,
-        estado: 'listo_para_despacho',
-        cliente: payload.customer,
-        direccion: payload.address,
-        items: payload.items,
-        prioridad: payload.prioridad,
-        canal: payload.canal,
-      }),
-    });
+  while (attempt <= maxRetries) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orderId: payload.orderId,
+          estado: 'listo_para_despacho',
+          cliente: payload.customer,
+          direccion: payload.address,
+          items: payload.items,
+          prioridad: payload.prioridad,
+          canal: payload.canal,
+        }),
+      });
 
-    if (res.ok) {
-      const data = await res.json().catch(() => ({}));
-      console.log(`[ShipmentClient] Pedido ${payload.orderId} enviado a logística exitosamente`);
-      return {
-        success: true,
-        simulated: false,
-        trackingNumber: data.trackingNumber ?? undefined,
-      };
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        console.log(`[ShipmentClient] Pedido ${payload.orderId} enviado a logística exitosamente`);
+        return {
+          success: true,
+          simulated: false,
+          trackingNumber: data.trackingNumber ?? undefined,
+        };
+      }
+
+      console.warn(`[ShipmentClient] P02 respondió con HTTP ${res.status} para pedido ${payload.orderId}. Intento ${attempt + 1}/${maxRetries + 1}`);
+    } catch (err) {
+      console.warn(`[ShipmentClient] Error de red al contactar P02 para pedido ${payload.orderId}:`, err);
     }
 
-    console.warn(
-      `[ShipmentClient] P02 respondió con HTTP ${res.status} para pedido ${payload.orderId}. Activando Fail-Fast.`
-    );
-  } catch (err) {
-    console.warn(`[ShipmentClient] Error de red al contactar P02 para pedido ${payload.orderId}:`, err);
+    attempt++;
+    if (attempt <= maxRetries) {
+      const delayMs = Math.pow(2, attempt - 1) * 1000;
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
   }
 
   console.warn(
