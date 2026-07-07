@@ -5,6 +5,7 @@ import OrdersTable from './OrdersTable';
 import OrderKanbanBoard from './OrderKanbanBoard';
 import { prisma } from '@/lib/prisma';
 import { type NormalizedOrder } from '@/lib/normalizers/orderNormalizer';
+import AutoRefresh from './AutoRefresh';
 
 interface DashboardProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -29,11 +30,11 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
   const dbOrders = await prisma.order.findMany({
     include: {
       cliente: true,
-      direccionEnvio: true, // Corregido: debe ser direccionEnvio
+      direccionEnvio: true, 
       items: true,
     },
     orderBy: {
-      recibidoEn: 'desc', // Corregido: usamos la fecha real de tu esquema
+      recibidoEn: 'desc',
     }
   });
 
@@ -42,7 +43,7 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
     id_pedido: order.id,
     recibido_en: order.recibidoEn.toISOString(),
     id_canal: order.idCanal,
-    tipo_canal: order.tipoCanal.toLowerCase() as any, // WEB -> web
+    tipo_canal: order.tipoCanal.toLowerCase() as any,
     prioridad: (order.prioridad === 'URGENTE' ? 'alta' : order.prioridad.toLowerCase()) as any,
     cliente: {
       nombre: order.cliente?.nombre || 'Desconocido',
@@ -66,7 +67,7 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
     subtotal: order.subtotal,
     impuestos: order.impuestos,
     total: order.total,
-    estado: order.estado.toLowerCase() as any, // CREADO -> creado
+    estado: order.estado.toLowerCase() as any,
   }));
 
   // 3. Aplicar filtros
@@ -85,6 +86,7 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
 
   return (
     <div className="p-6 md:p-10">
+      <AutoRefresh interval={5000} />
       <div className="max-w-7xl mx-auto">
         <header className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>
