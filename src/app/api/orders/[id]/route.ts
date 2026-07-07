@@ -59,31 +59,31 @@ export async function GET(
       impuestos: order.impuestos,
       total: order.total,
       fecha_creacion: order.recibidoEn,
-      cliente: {
+      cliente: order.cliente ? {
         nombre: order.cliente.nombre,
         email: order.cliente.email,
         telefono: order.cliente.telefono,
-      },
-      direccion_envio: {
+      } : null,
+      direccion_envio: order.direccionEnvio ? {
         calle: order.direccionEnvio.calle,
         numero: order.direccionEnvio.numero,
         ciudad: order.direccionEnvio.ciudad,
         region: order.direccionEnvio.region,
         pais: order.direccionEnvio.pais,
         codigo_postal: order.direccionEnvio.codigoPostal,
-      },
-      items: order.items.map(item => ({
+      } : null,
+      items: order.items ? order.items.map(item => ({
         sku: item.sku,
         cantidad: item.cantidad,
         precio_unitario: item.precioUnitario,
         descuento: item.descuento,
-      })),
+      })) : [],
     });
 
   } catch (error) {
     console.error('Error obteniendo pedido:', error);
     return NextResponse.json(
-      { error: 'Error interno del servidor al obtener el pedido' },
+      { error: 'Error interno del servidor al obtener el pedido', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

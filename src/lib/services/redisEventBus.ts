@@ -27,9 +27,21 @@ export async function getRedisClient(): Promise<RedisClientType> {
     return redisClient;
   }
 
-  redisClient = createClient({ url: getRedisUrl() });
+  redisClient = createClient({ 
+    url: getRedisUrl(),
+    socket: {
+      connectTimeout: 5000,
+      reconnectStrategy: (retries) => {
+        if (retries > 3) {
+          return new Error('Max retries reached for Redis connection');
+        }
+        return Math.min(retries * 50, 500); // Wait up to 500ms between retries
+      }
+    }
+  });
+  
   redisClient.on('error', (error: Error) => {
-    console.error('[RedisEventBus] Redis client error:', error);
+    console.error('[RedisEventBus] Redis client error:', error.message);
   });
 
   await redisClient.connect();
