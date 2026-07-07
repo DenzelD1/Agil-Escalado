@@ -28,11 +28,16 @@ export async function GET(
       );
     }
 
-    const order = await prisma.order.findUnique({
-      where: { id },
+    const order = await prisma.order.findFirst({
+      where: {
+        OR: [
+          { id },
+          { idCanal: id }
+        ]
+      },
       include: {
         cliente: true,
-        direccion: true,
+        direccionEnvio: true,
         items: true,
       },
     });
@@ -47,6 +52,7 @@ export async function GET(
     // Retornamos la información básica del pedido
     return NextResponse.json({
       id: order.id,
+      id_canal: order.idCanal,
       estado: order.estado,
       prioridad: order.prioridad,
       subtotal: order.subtotal,
@@ -59,12 +65,12 @@ export async function GET(
         telefono: order.cliente.telefono,
       },
       direccion_envio: {
-        calle: order.direccion.calle,
-        numero: order.direccion.numero,
-        ciudad: order.direccion.ciudad,
-        region: order.direccion.region,
-        pais: order.direccion.pais,
-        codigo_postal: order.direccion.codigoPostal,
+        calle: order.direccionEnvio.calle,
+        numero: order.direccionEnvio.numero,
+        ciudad: order.direccionEnvio.ciudad,
+        region: order.direccionEnvio.region,
+        pais: order.direccionEnvio.pais,
+        codigo_postal: order.direccionEnvio.codigoPostal,
       },
       items: order.items.map(item => ({
         sku: item.sku,
