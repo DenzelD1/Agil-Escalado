@@ -3,7 +3,8 @@ import Link from 'next/link';
 import OrderFilters from './OrderFilters';
 import OrdersTable from './OrdersTable';
 import OrderKanbanBoard from './OrderKanbanBoard';
-import { MOCK_ORDERS } from '@/lib/mockData';
+import { prisma } from '@/lib/prisma';
+import { type NormalizedOrder } from '@/lib/normalizers/orderNormalizer';
 
 interface DashboardProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -16,7 +17,6 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
   const prioridadFilter = typeof resolvedSearchParams.prioridad === 'string' ? resolvedSearchParams.prioridad : undefined;
   const view = typeof resolvedSearchParams.view === 'string' ? resolvedSearchParams.view : 'table';
 
-  // Helper to build URLs preserving current query params
   const buildUrl = (newView: string) => {
     const params = new URLSearchParams();
     if (canalFilter) params.set('canal', canalFilter);
@@ -25,9 +25,51 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
     return `?${params.toString()}`;
   };
 
-  // Filtrar los pedidos
-  let filteredOrders = [...MOCK_ORDERS];
+  // 1. Consultar pedidos con los nombres EXACTOS de tu schema.prisma
+  const dbOrders = await prisma.order.findMany({
+    include: {
+      cliente: true,
+      direccionEnvio: true, // Corregido: debe ser direccionEnvio
+      items: true,
+    },
+    orderBy: {
+      recibidoEn: 'desc', // Corregido: usamos la fecha real de tu esquema
+    }
+  });
 
+  // 2. Mapear los datos y pasar los ENUMS a minúsculas para los colores
+  let filteredOrders: NormalizedOrder[] = dbOrders.map(order => ({
+    id_pedido: order.id,
+    recibido_en: order.recibidoEn.toISOString(),
+    id_canal: order.idCanal,
+    tipo_canal: order.tipoCanal.toLowerCase() as any, // WEB -> web
+    prioridad: (order.prioridad === 'URGENTE' ? 'alta' : order.prioridad.toLowerCase()) as any,
+    cliente: {
+      nombre: order.cliente?.nombre || 'Desconocido',
+      email: order.cliente?.email || '',
+      telefono: order.cliente?.telefono || '',
+    },
+    direccion_envio: order.direccionEnvio ? {
+      calle: order.direccionEnvio.calle,
+      numero: order.direccionEnvio.numero,
+      ciudad: order.direccionEnvio.ciudad,
+      region: order.direccionEnvio.region || '',
+      codigo_postal: order.direccionEnvio.codigoPostal || '',
+      pais: order.direccionEnvio.pais,
+    } : {} as any,
+    items: order.items.map(item => ({
+      sku: item.sku,
+      cantidad: item.cantidad,
+      precio_unitario: item.precioUnitario,
+      descuento: item.descuento,
+    })),
+    subtotal: order.subtotal,
+    impuestos: order.impuestos,
+    total: order.total,
+    estado: order.estado.toLowerCase() as any, // CREADO -> creado
+  }));
+
+  // 3. Aplicar filtros
   if (canalFilter) {
     filteredOrders = filteredOrders.filter(order => order.tipo_canal === canalFilter);
   }
@@ -36,10 +78,7 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
     filteredOrders = filteredOrders.filter(order => order.prioridad === prioridadFilter);
   }
 
-  // Ordenar por fecha descendente
-  filteredOrders.sort((a, b) => new Date(b.recibido_en).getTime() - new Date(a.recibido_en).getTime());
-
-  // Calcular métricas
+  // 4. Calcular métricas
   const totalOrders = filteredOrders.length;
   const totalRevenue = filteredOrders.reduce((sum, order) => sum + order.total, 0);
   const highPriorityCount = filteredOrders.filter(o => o.prioridad === 'alta').length;
@@ -51,7 +90,7 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-brand-yale">Panel Operativo</h1>
             <p className="text-brand-graphite/70 mt-1">
-              Gestión centralizada de pedidos omnicanal. Datos de prueba cargados.
+              Gestión centralizada de pedidos omnicanal. Conectado a PostgreSQL.
             </p>
           </div>
 
