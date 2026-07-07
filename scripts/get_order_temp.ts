@@ -4,7 +4,7 @@ async function main() {
   const order = await prisma.order.findFirst({
     include: {
       cliente: true,
-      direccion: true,
+      direccionEnvio: true,
       items: true,
     },
   });
