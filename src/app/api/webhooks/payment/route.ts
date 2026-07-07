@@ -53,7 +53,8 @@ export async function POST(request: Request) {
     }
 
     const order = await prisma.order.findUnique({
-      where: { id: orderId }
+      where: { id: orderId },
+      include: { cliente: true }
     });
 
     if (!order) {
@@ -145,6 +146,8 @@ export async function POST(request: Request) {
         sistema_origen: 'pedidos',
         sistema_id: 'P03',
         pedido_id_ref: orderId,
+        cliente_nombre: order.cliente?.nombre || 'Desconocido',
+        cliente_email: order.cliente?.email || 'no-reply@agil-escalado.com',
         contexto: JSON.stringify({ status, reason: errorReason }),
       }).catch(e => console.error("Error escalando ticket CRM", e));
 

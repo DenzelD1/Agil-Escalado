@@ -9,6 +9,7 @@ import { persistOrder } from '@/lib/services/orderPersistence';
 import { initiatePayment } from '@/lib/services/paymentClient';
 import { dispatchExternalEvent } from '@/lib/services/externalEventDispatcher';
 import { createSupportTicket } from '@/lib/services/crmClient';
+import { reportIncident } from '@/lib/services/incidentReporterClient';
 
 export async function POST(request: Request) {
   try {
@@ -106,6 +107,8 @@ export async function POST(request: Request) {
           sistema_origen: 'pedidos',
           sistema_id: 'P03',
           pedido_id_ref: pedidoNormalizado.id_pedido,
+          cliente_nombre: pedidoNormalizado.cliente.nombre,
+          cliente_email: pedidoNormalizado.cliente.email,
         }).catch(e => console.error("Error creando ticket CRM por stock insuficiente", e));
       }
 
@@ -137,6 +140,13 @@ export async function POST(request: Request) {
       if (stockResult.reservas.length > 0) {
         await rollbackReservations(stockResult.reservas, token);
       }
+
+      reportIncident({
+        titulo: 'Falla al persistir pedido en Base de Datos (Mobile)',
+        descripcion: `Error: ${dbError instanceof Error ? dbError.message : String(dbError)}`,
+        prioridad: 'alta',
+        sistema_origen: 'pedidos',
+      }).catch(e => console.error('Error reportando incidente', e));
 
       return NextResponse.json(
         { error: 'Error interno guardando el pedido. Se ha liberado el inventario reservado.' },

@@ -12,7 +12,7 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient(): PrismaClient {
-  return new PrismaClient();
+  return new PrismaClient({} as any);
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();

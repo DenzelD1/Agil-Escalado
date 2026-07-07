@@ -148,7 +148,7 @@ export function normalizeOrder(
  */
 export function safeNormalizeOrder(
   body: Record<string, unknown>,
-  canal: Canal,
+  canal: 'web' | 'app' | 'call_center' | 'internal',
 ):
   | { success: true; data: NormalizedOrder }
   | { success: false; errors: NormalizationError[]; rawError?: unknown } {

@@ -14,7 +14,7 @@ Para que nuestro sistema pueda enviarle datos o pedirles acciones a otros proyec
 | **P05 (Inventario)** | 🟢 Completo. Tenemos su URL (`proyectogestordeinventario-production.up.railway.app`) y la API Key en `.env.local`. | Ninguna acción requerida por ahora. |
 | **P06 (Notificaciones)** | 🟢 Completo. Tenemos la URL y la API Key configuradas directo en `notificationClient.ts`. | Ninguna acción requerida, a menos que cambien sus llaves. |
 | **P07 (CRM)** | 🟢 Completo. Les enviamos tickets mediante `crmClient.ts` a su URL en Vercel. | Ninguna acción requerida. |
-| **P09 (Analítica)** | 🟢 Código completo y variables agregadas. Ya enviamos eventos automáticamente (`pedido_creado`, `stock_agotado`, etc.) hacia `analisis-proyecto-ti.onrender.com`. | ❓ **Revisar compatibilidad con P09**. Debemos preguntarles si la estructura JSON que les estamos mandando les sirve. |
+| **P09 (Analítica)** | 🟢 Completo. Código y variables agregadas. Ya enviamos eventos automáticamente hacia su URL. | Ninguna acción requerida. Ya validaron que la estructura JSON les sirve. |
 | **P11 (Incidentes)** | 🟢 Completo. Tenemos `INCIDENT_API_URL` e `INCIDENT_API_KEY` en `.env.local` y usamos `incidentReporterClient.ts`. | Ninguna acción requerida. |
 
 ---

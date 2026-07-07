@@ -3,7 +3,7 @@ import { z } from 'zod';
 // ---------------------------------------------------------------------------
 // Canal de venta
 // ---------------------------------------------------------------------------
-export const CanalSchema = z.enum(['web', 'app', 'call_center']);
+export const CanalSchema = z.enum(['web', 'app', 'call_center', 'internal']);
 export type Canal = z.infer<typeof CanalSchema>;
 
 export const PrioridadSchema = z.enum(['alta', 'media', 'baja']);

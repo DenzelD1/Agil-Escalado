@@ -12,6 +12,7 @@ export type OrderStateEvent =
   | { type: 'PAGO_RECHAZADO'; error: string }
   | { type: 'STOCK_RESERVADO' }
   | { type: 'STOCK_INSUFICIENTE'; error: string }
+  | { type: 'EXENTO_DE_PAGO' }
   | { type: 'ENVIAR' }
   | { type: 'EN_TRANSITO'; trackingNumber?: string }
   | { type: 'ENTREGADO' }
@@ -50,6 +51,7 @@ export const orderStateMachine = createMachine(
       verificado: {
         on: {
           PAGO_APROBADO: 'pagado',
+          EXENTO_DE_PAGO: 'listo_para_despacho',
           PAGO_RECHAZADO: {
             target: 'rechazado',
             actions: 'setError',

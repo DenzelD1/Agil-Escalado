@@ -56,6 +56,7 @@ export function transitionOrderState(
     },
     verificado: {
       PAGO_APROBADO: 'pagado',
+      EXENTO_DE_PAGO: 'listo_para_despacho',
       PAGO_RECHAZADO: 'rechazado',
       CANCELAR: 'cancelado',
     },
