@@ -1,7 +1,10 @@
+'use client';
+
 import { type NormalizedOrder } from '@/lib/normalizers/orderNormalizer';
 
 interface OrderKanbanBoardProps {
   orders: NormalizedOrder[];
+  onOrderClick?: (order: NormalizedOrder) => void;
 }
 
 // ⚠️ ACTUALIZADO: Las columnas ahora coinciden exactamente con los estados de PostgreSQL (Prisma)
@@ -16,7 +19,7 @@ const KANBAN_COLUMNS = [
   { id: 'error', title: 'Error', color: 'border-red-200 bg-red-50/30', headerColor: 'bg-red-100/80 text-red-800' },
 ];
 
-export default function OrderKanbanBoard({ orders }: OrderKanbanBoardProps) {
+export default function OrderKanbanBoard({ orders, onOrderClick }: OrderKanbanBoardProps) {
   // Agrupar órdenes por estado
   const ordersByStatus = KANBAN_COLUMNS.reduce((acc, col) => {
     acc[col.id] = orders.filter((order) => order.estado === col.id);
@@ -27,7 +30,6 @@ export default function OrderKanbanBoard({ orders }: OrderKanbanBoardProps) {
     switch (priority) {
       case 'alta':
       case 'urgente':
-        // Micro-animación: Latido brillante para pedidos urgentes
         return <div className="w-2 h-2 rounded-full bg-red-500 mr-2 shrink-0 animate-pulse shadow-[0_0_5px_rgba(239,68,68,0.6)]" title="Prioridad Alta" />;
       case 'media':
         return <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2 shrink-0" title="Prioridad Media" />;
@@ -70,7 +72,8 @@ export default function OrderKanbanBoard({ orders }: OrderKanbanBoardProps) {
                 // Hover Effects: Elevación y cambio de borde
                 <div 
                   key={order.id_pedido} 
-                  className="group bg-white/80 backdrop-blur-sm border border-brand-alabaster rounded-lg p-3 shadow-sm hover:shadow-md hover:-translate-y-1 hover:border-brand-teal/50 transition-all duration-300 cursor-default"
+                  onClick={() => onOrderClick?.(order)} 
+                  className="group bg-white/80 backdrop-blur-sm border border-brand-alabaster rounded-lg p-3 shadow-sm hover:shadow-md hover:-translate-y-1 hover:border-brand-teal/50 transition-all duration-300 cursor-pointer"
                 >
                   <div className="flex justify-between items-start mb-2">
                     <span className="text-xs font-mono text-brand-graphite/60 bg-brand-alabaster/40 px-1.5 py-0.5 rounded truncate max-w-30 group-hover:text-brand-yale transition-colors">
