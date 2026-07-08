@@ -43,3 +43,6 @@ next-env.d.ts
 /src/generated/prisma
 prisma/dev.db
 prisma/dev.db-journal
+
+# Excluir carpeta de simulacro de examen
+/simulacro_examen_reinas
