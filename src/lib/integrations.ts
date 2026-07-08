@@ -10,7 +10,7 @@ export interface IntegrationNode {
 }
 
 export const INTEGRATIONS: IntegrationNode[] = [
-  { id: 'P04', name: 'Pasarela UCNPay', description: 'Procesamiento de pagos (Proyecto 4)', status: 'pending', lastPing: '-', endpoint: 'http://localhost:4004/ucnpay/init' },
+  { id: 'P04', name: 'Pasarela UCNPay', description: 'Procesamiento de pagos (Proyecto 4)', status: 'pending', lastPing: '-', endpoint: process.env.API_PAGOS_URL ? `${process.env.API_PAGOS_URL}/ucnpay/init` : 'http://localhost:4004/ucnpay/init' },
   { id: 'P05', name: 'Inventario Global', description: 'Gestión de stock (Proyecto 5)', status: 'pending', lastPing: '-', endpoint: 'https://proyectogestordeinventario-production.up.railway.app/api/inventory' },
   { id: 'P06', name: 'Notificaciones', description: 'SMS y Emails (Proyecto 6)', status: 'pending', lastPing: '-', endpoint: 'https://ucn-agil-notificaciones.up.railway.app/notifications/send' },
   { id: 'P07', name: 'CRM y Clientes', description: 'Soporte y VIPs (Proyecto 7)', status: 'pending', lastPing: '-', endpoint: 'https://pgti-proyecto-crm-backend.vercel.app/api/v1/tickets/externo' },

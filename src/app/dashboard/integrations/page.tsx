@@ -15,26 +15,6 @@ export default function IntegrationsPage() {
           </p>
         </header>
 
-        {/* Global Network Metrics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white/50 backdrop-blur-sm p-4 rounded-xl border border-brand-alabaster shadow-sm">
-            <span className="block text-xs font-medium text-brand-graphite/60 uppercase tracking-wider">Conexiones Activas</span>
-            <span className="block text-2xl font-bold text-brand-teal mt-1">4/6</span>
-          </div>
-          <div className="bg-white/50 backdrop-blur-sm p-4 rounded-xl border border-brand-alabaster shadow-sm">
-            <span className="block text-xs font-medium text-brand-graphite/60 uppercase tracking-wider">Latencia Promedio</span>
-            <span className="block text-2xl font-bold text-brand-graphite mt-1">124ms</span>
-          </div>
-          <div className="bg-white/50 backdrop-blur-sm p-4 rounded-xl border border-brand-alabaster shadow-sm">
-            <span className="block text-xs font-medium text-brand-graphite/60 uppercase tracking-wider">Fallos (24h)</span>
-            <span className="block text-2xl font-bold text-yellow-600 mt-1">12</span>
-          </div>
-          <div className="bg-white/50 backdrop-blur-sm p-4 rounded-xl border border-brand-alabaster shadow-sm">
-            <span className="block text-xs font-medium text-brand-graphite/60 uppercase tracking-wider">Último Incidente</span>
-            <span className="block text-sm font-bold text-red-600 mt-2 truncate">P11 Auth 401</span>
-          </div>
-        </div>
-
         {/* Dynamic Network Grid */}
         <div className="mt-8">
           <IntegrationNetwork />

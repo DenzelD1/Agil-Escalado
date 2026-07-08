@@ -19,6 +19,7 @@ export default function IntegrationNetwork() {
   const [logs, setLogs] = useState<Record<string, Array<any>>>({});
   const [selectedLogsNode, setSelectedLogsNode] = useState<string | null>(null);
   const [nodeMeta, setNodeMeta] = useState<Record<string, { failures: number; successes: number }>>({});
+  const [globalMetrics, setGlobalMetrics] = useState({ avgLatency: 0, lastIncident: "Ninguno" });
 
   useEffect(() => {
     // connect to SSE stream
@@ -32,7 +33,7 @@ export default function IntegrationNetwork() {
           const snapshot = parsed.integrations as any[];
           setNodes((cur) => cur.map(n => {
             const found = snapshot.find(s => s.id === n.id);
-            return found ? { ...n, status: found.status ?? n.status, lastPing: found.lastPing ?? n.lastPing, displayStatus: (found.status === 'healthy') ? 'healthy' : 'down' } : n;
+            return found ? { ...n, status: found.status ?? n.status, endpoint: found.endpoint ?? n.endpoint, lastPing: found.lastPing ?? n.lastPing, displayStatus: (found.status === 'healthy') ? 'healthy' : 'down' } : n;
           }));
           // do not auto-initialize logs here; keep logs only for manual tests
           setNodeMeta((cur) => {
@@ -70,6 +71,29 @@ export default function IntegrationNetwork() {
 
               return { ...n, displayStatus };
             }));
+
+            // update global metrics
+            setGlobalMetrics((prev) => {
+              let totalLatency = 0;
+              let count = 0;
+              let incident = prev.lastIncident;
+
+              updates.forEach((u: any) => {
+                const probe = u.probe || {};
+                if (probe.ok && probe.elapsed != null) {
+                  totalLatency += probe.elapsed;
+                  count++;
+                } else if (!probe.ok && probe.error) {
+                  incident = `${u.id} - ${String(probe.error).substring(0, 15)}`;
+                }
+              });
+
+              const currentAvg = count > 0 ? Math.round(totalLatency / count) : 0;
+              return {
+                avgLatency: currentAvg > 0 ? currentAvg : prev.avgLatency,
+                lastIncident: incident
+              };
+            });
 
             return copy;
           });
@@ -180,8 +204,36 @@ export default function IntegrationNetwork() {
 
   const closeLogs = () => setSelectedLogsNode(null);
 
+  const totalNodes = nodes.length;
+  const activeNodes = nodes.filter(n => (n as any).displayStatus === 'healthy' || n.status === 'healthy').length;
+  let totalFailures = 0;
+  Object.values(nodeMeta).forEach(meta => { totalFailures += meta.failures; });
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
+    <div>
+      {/* Global Network Metrics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-white/50 backdrop-blur-sm p-4 rounded-xl border border-brand-alabaster shadow-sm">
+          <span className="block text-xs font-medium text-brand-graphite/60 uppercase tracking-wider">Conexiones Activas</span>
+          <span className={`block text-2xl font-bold mt-1 ${activeNodes === totalNodes ? 'text-brand-teal' : 'text-yellow-600'}`}>
+            {activeNodes}/{totalNodes}
+          </span>
+        </div>
+        <div className="bg-white/50 backdrop-blur-sm p-4 rounded-xl border border-brand-alabaster shadow-sm">
+          <span className="block text-xs font-medium text-brand-graphite/60 uppercase tracking-wider">Latencia Promedio</span>
+          <span className="block text-2xl font-bold text-brand-graphite mt-1">{globalMetrics.avgLatency > 0 ? `${globalMetrics.avgLatency}ms` : '-'}</span>
+        </div>
+        <div className="bg-white/50 backdrop-blur-sm p-4 rounded-xl border border-brand-alabaster shadow-sm">
+          <span className="block text-xs font-medium text-brand-graphite/60 uppercase tracking-wider">Fallos (24h)</span>
+          <span className={`block text-2xl font-bold mt-1 ${totalFailures > 0 ? 'text-yellow-600' : 'text-brand-teal'}`}>{totalFailures}</span>
+        </div>
+        <div className="bg-white/50 backdrop-blur-sm p-4 rounded-xl border border-brand-alabaster shadow-sm">
+          <span className="block text-xs font-medium text-brand-graphite/60 uppercase tracking-wider">Último Incidente</span>
+          <span className={`block text-sm font-bold mt-2 truncate ${globalMetrics.lastIncident !== 'Ninguno' ? 'text-red-600' : 'text-brand-graphite/60'}`}>{globalMetrics.lastIncident}</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
       {nodes.map(node => {
         const display = (node as any).displayStatus ?? node.status;
         const config = statusConfig[display] ?? statusConfig.pending;
@@ -259,6 +311,7 @@ export default function IntegrationNetwork() {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }

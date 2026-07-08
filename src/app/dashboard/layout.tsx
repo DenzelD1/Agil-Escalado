@@ -23,7 +23,7 @@ export default function DashboardLayout({
         {/* Botón Flotante Premium */}
         <button 
           onClick={() => setIsDark(!isDark)}
-          className="absolute top-6 right-8 z-50 bg-[#3C6E71] hover:bg-[#284B63] text-white px-5 py-2.5 rounded-full shadow-lg font-bold text-sm flex items-center gap-2 transition-all duration-300 border border-white/20 hover:scale-105"
+          className="fixed bottom-8 right-8 z-50 bg-[#3C6E71] hover:bg-[#284B63] text-white px-5 py-2.5 rounded-full shadow-lg font-bold text-sm flex items-center gap-2 transition-all duration-300 border border-white/20 hover:scale-105"
         >
           {isDark ? 'Modo Claro' : 'Modo Oscuro'}
         </button>

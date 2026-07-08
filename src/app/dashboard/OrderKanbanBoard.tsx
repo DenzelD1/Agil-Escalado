@@ -10,14 +10,13 @@ interface OrderKanbanBoardProps {
 // ⚠️ ACTUALIZADO: Las columnas ahora coinciden exactamente con los estados de PostgreSQL (Prisma)
 const KANBAN_COLUMNS = [
   { id: 'creado', title: 'Creado', color: 'border-blue-200 bg-blue-50/30', headerColor: 'bg-blue-100/80 text-blue-800', active: true },
-  { id: 'verificado', title: 'Verificado', color: 'border-indigo-200 bg-indigo-50/30', headerColor: 'bg-indigo-100/80 text-indigo-800', active: true },
+  { id: 'procesando', title: 'Procesando', color: 'border-indigo-200 bg-indigo-50/30', headerColor: 'bg-indigo-100/80 text-indigo-800', active: true },
+  { id: 'confirmado', title: 'Confirmado', color: 'border-cyan-200 bg-cyan-50/30', headerColor: 'bg-cyan-100/80 text-cyan-800', active: true },
   { id: 'pagado', title: 'Pagado', color: 'border-brand-teal/30 bg-brand-teal/10', headerColor: 'bg-brand-teal/20 text-brand-teal' },
-  { id: 'pendiente_preparacion', title: 'Pendiente Prep.', color: 'border-fuchsia-200 bg-fuchsia-50/30', headerColor: 'bg-fuchsia-100/80 text-fuchsia-800', active: true },
-  { id: 'listo_para_despacho', title: 'Listo Despacho', color: 'border-amber-200 bg-amber-50/30', headerColor: 'bg-amber-100/80 text-amber-800' },
-  { id: 'en_transito', title: 'En Tránsito', color: 'border-orange-200 bg-orange-50/30', headerColor: 'bg-orange-100/80 text-orange-800' },
+  { id: 'enviado', title: 'Enviado', color: 'border-amber-200 bg-amber-50/30', headerColor: 'bg-amber-100/80 text-amber-800' },
   { id: 'entregado', title: 'Entregado', color: 'border-green-200 bg-green-50/30', headerColor: 'bg-green-100/80 text-green-800' },
-  { id: 'rechazado', title: 'Rechazado', color: 'border-red-200 bg-red-50/30', headerColor: 'bg-red-100/80 text-red-800' },
   { id: 'cancelado', title: 'Cancelado', color: 'border-gray-200 bg-gray-50/30', headerColor: 'bg-gray-200/80 text-gray-800' },
+  { id: 'error', title: 'Error', color: 'border-red-200 bg-red-50/30', headerColor: 'bg-red-100/80 text-red-800' },
 ];
 
 export default function OrderKanbanBoard({ orders, onOrderClick }: OrderKanbanBoardProps) {
