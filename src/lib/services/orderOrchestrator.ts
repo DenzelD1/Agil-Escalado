@@ -124,6 +124,8 @@ export async function processIncomingOrder(
       sales_channel: pedidoNormalizado.tipo_canal,
       total_amount: pedidoNormalizado.total,
       total_items: pedidoNormalizado.items.reduce((acc: number, item: any) => acc + item.cantidad, 0),
+      lista_productos: pedidoNormalizado.items,
+      direccion_despacho: pedidoNormalizado.direccion_envio,
     }
   }).catch(e => console.error("Error despachando evento pedido_creado", e));
 

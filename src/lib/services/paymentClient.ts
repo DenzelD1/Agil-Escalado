@@ -56,7 +56,6 @@ export async function initiatePayment(
         moneda: 'CLP',
         nombreComercio: process.env.UCNPAY_MERCHANT_NAME || 'Agil Escalado',
         returnUrl: `${getReturnUrl()}/checkout/result`,
-        metadata,
       }),
     });
 

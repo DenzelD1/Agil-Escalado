@@ -25,16 +25,17 @@ export async function POST(request: Request) {
   const validationResponse = validateUcnpayPrivateKey(request);
   if (validationResponse) return validationResponse;
   try {
-    const body: any = await request.json();
+    const rawBody = await request.json();
+    const body = rawBody as Record<string, unknown>;
 
     const orderId =
-      body.orderId ||
-      body.idOrden ||
-      body.id_orden ||
-      body.order_id ||
-      body.id;
+      (body.orderId as string | undefined) ||
+      (body.idOrden as string | undefined) ||
+      (body.id_orden as string | undefined) ||
+      (body.order_id as string | undefined) ||
+      (body.id as string | undefined);
 
-    let status = body.status;
+    let status = body.status as string | undefined;
     if (!status && body.event) {
       if (body.event === 'transaction.approved') {
         status = 'APROBADO';
@@ -43,7 +44,12 @@ export async function POST(request: Request) {
       }
     }
 
-    const errorReason = body.reason || body.errorReason || body.error || body.motivo || body.statusReason;
+    const errorReason = (body.reason as string | undefined) || 
+      (body.errorReason as string | undefined) || 
+      (body.error as string | undefined) || 
+      (body.motivo as string | undefined) || 
+      (body.statusReason as string | undefined) || 
+      (status === 'RECHAZADO' || body.event === 'transaction.rejected' ? 'Transacción rechazada por la pasarela de pagos' : undefined);
 
     if (!orderId || !status) {
       return NextResponse.json(
@@ -71,10 +77,11 @@ export async function POST(request: Request) {
       eventType = 'PAGO_APROBADO';
     }
 
-    const transition = await getOrderStateTransition(order.estado as any, {
-      type: eventType,
-      error: errorReason
-    }, {
+    const transitionEvent = eventType === 'PAGO_APROBADO' 
+      ? { type: 'PAGO_APROBADO' as const } 
+      : { type: 'PAGO_RECHAZADO' as const, error: errorReason || 'Error desconocido' };
+
+    const transition = await getOrderStateTransition(order.estado as OrderStatus, transitionEvent, {
       orderId,
       publishToRedis: true,
       metadata: {
@@ -91,7 +98,7 @@ export async function POST(request: Request) {
       await prisma.order.update({
         where: { id: orderId },
         data: {
-          estado: transition.nextState as any,
+          estado: transition.nextState as Parameters<typeof prisma.order.update>[0]['data']['estado'],
           motivoRechazo: errorReason || 'Pago rechazado por el proveedor',
           intentosPago: { increment: 1 }
         }
@@ -155,7 +162,7 @@ export async function POST(request: Request) {
       await prisma.order.update({
         where: { id: orderId },
         data: {
-          estado: transition.nextState as any,
+          estado: transition.nextState as Parameters<typeof prisma.order.update>[0]['data']['estado'],
           motivoRechazo: null
         }
       });

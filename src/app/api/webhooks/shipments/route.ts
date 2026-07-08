@@ -11,6 +11,9 @@ const ShipmentWebhookSchema = z.object({
   orderId: z.string().min(1, "orderId es requerido"),
   status: z.enum(['ready_for_dispatch', 'in_transit', 'delivered']),
   trackingNumber: z.string().optional(),
+  trackingId: z.string().optional(),
+  driver: z.string().optional(),
+  eta: z.string().optional(),
   timestamp: z.string().optional(), // ISO date string
 });
 
@@ -25,7 +28,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Faltan campos requeridos o son inválidos", detalles: validationResult.error.format() }, { status: 400 });
     }
 
-    const { orderId, status, trackingNumber, timestamp } = validationResult.data;
+    const { orderId, status, trackingNumber, trackingId, driver, eta, timestamp } = validationResult.data;
+    const finalTrackingNumber = trackingNumber || trackingId;
 
     const order = await prisma.order.findUnique({
       where: { id: orderId },
@@ -58,12 +62,14 @@ export async function POST(request: Request) {
 
     const transition = await getOrderStateTransition(
       order.estado as OrderStatus,
-      { type: eventType, trackingNumber },
+      { type: eventType, trackingNumber: finalTrackingNumber },
       {
         orderId,
         publishToRedis: true,
         metadata: {
-          trackingNumber: trackingNumber ?? undefined,
+          trackingNumber: finalTrackingNumber ?? undefined,
+          driver: driver ?? undefined,
+          eta: eta ?? undefined,
           source: 'shipping_webhook',
         },
       },
@@ -124,7 +130,7 @@ export async function POST(request: Request) {
           channel: 'email',
           recipient: { email: order.cliente.email },
           subject: 'Tu pedido va en camino',
-          body: { email: `Tu pedido ${orderId} ha salido hacia tu domicilio.` }
+          body: { email: `Tu pedido ${orderId} ha salido hacia tu domicilio.${finalTrackingNumber ? `\n\nID de seguimiento: ${finalTrackingNumber}` : ''}${driver ? `\nRepartidor asignado: ${driver}` : ''}${eta ? `\nHora estimada de llegada: ${eta}` : ''}` }
         }).catch(e => console.error(e));
       }
 
@@ -154,7 +160,7 @@ export async function POST(request: Request) {
       success: true,
       message: transition.message,
       newState: transition.nextState,
-      ...(trackingNumber ? { trackingNumber } : {}),
+      ...(finalTrackingNumber ? { trackingNumber: finalTrackingNumber } : {}),
     });
   } catch (error) {
     console.error('Error procesando webhook de envío:', error);

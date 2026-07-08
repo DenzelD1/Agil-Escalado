@@ -56,11 +56,15 @@ export function transitionOrderState(
     },
     verificado: {
       PAGO_APROBADO: 'pagado',
-      EXENTO_DE_PAGO: 'listo_para_despacho',
+      EXENTO_DE_PAGO: 'pendiente_preparacion',
       PAGO_RECHAZADO: 'rechazado',
       CANCELAR: 'cancelado',
     },
     pagado: {
+      ENVIAR: 'listo_para_despacho',
+      CANCELAR: 'cancelado',
+    },
+    pendiente_preparacion: {
       ENVIAR: 'listo_para_despacho',
       CANCELAR: 'cancelado',
     },

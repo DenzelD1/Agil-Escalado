@@ -37,7 +37,7 @@ export default function OrdersTable({ orders, onOrderClick }: OrdersTableProps) 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'creado':
-      case 'procesando':
+      case 'verificado':
         return (
           <span className="inline-flex items-center gap-1.5 bg-blue-50/80 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-full border border-blue-200 shadow-sm">
             <span className="relative flex h-2 w-2">
@@ -49,12 +49,27 @@ export default function OrdersTable({ orders, onOrderClick }: OrdersTableProps) 
         );
       case 'pagado':
         return <span className="bg-brand-teal/10 text-brand-teal text-xs font-medium px-2.5 py-1 rounded-full border border-brand-teal/30 shadow-sm">Pagado</span>;
+      case 'pendiente_preparacion':
+        return (
+          <span className="inline-flex items-center gap-1.5 bg-fuchsia-50/80 text-fuchsia-700 text-xs font-medium px-2.5 py-1 rounded-full border border-fuchsia-200 shadow-sm">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-fuchsia-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-fuchsia-500"></span>
+            </span>
+            <span>Pend. Prep.</span>
+          </span>
+        );
+      case 'listo_para_despacho':
+      case 'en_transito':
+        return <span className="bg-amber-100/80 text-amber-800 text-xs font-medium px-2.5 py-1 rounded-full border border-amber-200 capitalize">{status.replace(/_/g, ' ')}</span>;
+      case 'entregado':
+        return <span className="bg-green-100/80 text-green-800 text-xs font-medium px-2.5 py-1 rounded-full border border-green-200 capitalize">{status}</span>;
       case 'cancelado':
       case 'rechazado':
       case 'error':
         return <span className="bg-gray-100/80 text-gray-700 text-xs font-medium px-2.5 py-1 rounded-full border border-gray-200 capitalize">{status}</span>;
       default:
-        return <span className="bg-brand-alabaster/50 text-brand-yale text-xs font-medium px-2.5 py-1 rounded-full border border-brand-alabaster capitalize">{status}</span>;
+        return <span className="bg-brand-alabaster/50 text-brand-yale text-xs font-medium px-2.5 py-1 rounded-full border border-brand-alabaster capitalize">{status.replace(/_/g, ' ')}</span>;
     }
   };
 
@@ -85,7 +100,13 @@ export default function OrdersTable({ orders, onOrderClick }: OrdersTableProps) 
                 <div className="text-xs text-brand-graphite/60">{order.cliente.email}</div>
               </td>
               <td className="px-6 py-4">
-                <span className="capitalize">{order.tipo_canal.replace('_', ' ')}</span>
+                {order.tipo_canal === 'internal' ? (
+                  <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded flex items-center gap-1 font-semibold text-xs border border-indigo-200 w-fit">
+                    🚑 Prescripción
+                  </span>
+                ) : (
+                  <span className="capitalize">{order.tipo_canal.replace('_', ' ')}</span>
+                )}
               </td>
               <td className="px-6 py-4">
                 {getPriorityBadge(order.prioridad)}

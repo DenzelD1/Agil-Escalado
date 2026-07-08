@@ -13,6 +13,7 @@ export const OrderStatusSchema = z.enum([
   'creado',
   'verificado',
   'pagado',
+  'pendiente_preparacion',
   'listo_para_despacho',
   'en_transito',
   'entregado',

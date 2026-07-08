@@ -23,6 +23,7 @@ export type OrderStatus =
   | 'creado'
   | 'verificado'
   | 'pagado'
+  | 'pendiente_preparacion'
   | 'listo_para_despacho'
   | 'en_transito'
   | 'entregado'
@@ -51,7 +52,7 @@ export const orderStateMachine = createMachine(
       verificado: {
         on: {
           PAGO_APROBADO: 'pagado',
-          EXENTO_DE_PAGO: 'listo_para_despacho',
+          EXENTO_DE_PAGO: 'pendiente_preparacion',
           PAGO_RECHAZADO: {
             target: 'rechazado',
             actions: 'setError',
@@ -60,6 +61,12 @@ export const orderStateMachine = createMachine(
         },
       },
       pagado: {
+        on: {
+          ENVIAR: 'listo_para_despacho',
+          CANCELAR: 'cancelado',
+        },
+      },
+      pendiente_preparacion: {
         on: {
           ENVIAR: 'listo_para_despacho',
           CANCELAR: 'cancelado',

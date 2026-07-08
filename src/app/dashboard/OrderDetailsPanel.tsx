@@ -18,7 +18,14 @@ export default function OrderDetailsPanel({ order, onClose }: PanelProps) {
       {/* Panel deslizante */}
       <div className="relative w-full max-w-md bg-white/80 backdrop-blur-md shadow-2xl flex flex-col h-full animate-in slide-in-from-right duration-300 border-l border-brand-alabaster/50">
         <div className="px-6 py-4 border-b border-brand-alabaster flex justify-between items-center bg-brand-alabaster/20">
-          <h2 className="font-bold text-brand-yale text-lg">Detalle: {order.id_canal}</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="font-bold text-brand-yale text-lg">Detalle: {order.id_canal}</h2>
+            {order.tipo_canal === 'internal' && (
+              <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs font-semibold border border-indigo-200 shadow-sm whitespace-nowrap">
+                🚑 Kit Clínico (Premium)
+              </span>
+            )}
+          </div>
           <button onClick={onClose} className="text-brand-graphite/50 hover:text-brand-graphite">✕</button>
         </div>
         
@@ -53,15 +60,24 @@ export default function OrderDetailsPanel({ order, onClose }: PanelProps) {
 
             <div className="border-t border-brand-alabaster pt-4">
               <p className="text-xs text-brand-graphite/50 uppercase font-bold mb-2">Pago</p>
-              <div className="flex justify-between text-sm">
-                <span>Intentos de pago:</span>
-                <span className="font-medium">{order.intentosPago}</span>
-              </div>
-              {order.motivoRechazo && (
-                <div className="flex justify-between text-sm mt-1">
-                  <span>Motivo rechazo:</span>
-                  <span className="font-medium text-red-600">{order.motivoRechazo}</span>
+              {order.tipo_canal === 'internal' ? (
+                <div className="flex justify-between text-sm bg-green-50 p-2 rounded border border-green-100">
+                  <span className="text-green-700 font-medium">Exento de Pago (Atención Domiciliaria)</span>
+                  <span className="font-bold text-green-700">✓</span>
                 </div>
+              ) : (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span>Intentos de pago:</span>
+                    <span className="font-medium">{order.intentosPago}</span>
+                  </div>
+                  {order.motivoRechazo && (
+                    <div className="flex justify-between text-sm mt-1">
+                      <span>Motivo rechazo:</span>
+                      <span className="font-medium text-red-600">{order.motivoRechazo}</span>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 

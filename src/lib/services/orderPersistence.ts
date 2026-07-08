@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { NormalizedOrder } from "@/lib/normalizers/orderNormalizer";
 import type { StockReservation } from "@/lib/services/stockService";
-import { OrderChannel, OrderStatus, OrderPriority } from "@/generated/prisma";
+import { OrderChannel, OrderStatus, OrderPriority } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
 // Tipos de retorno

@@ -23,6 +23,8 @@ export const PedidoCreadoPayloadSchema = BasePayloadSchema.extend({
   sales_channel: z.string().optional(),
   total_amount: z.number().optional(),
   total_items: z.number().int().optional(),
+  lista_productos: z.array(z.any()).optional(),
+  direccion_despacho: z.any().optional(),
 });
 
 // Eventos específicos usando Zod Discriminated Union
