@@ -1,57 +1,38 @@
-import Link from 'next/link';
+'use client';
+
+import { useState } from 'react';
+import Sidebar from './Sidebar';
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <div className="min-h-screen bg-brand-background text-brand-graphite font-sans">
-      {/* Navbar Superior */}
-      <nav className="bg-brand-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-brand-alabaster shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <span className="text-xl font-bold bg-gradient-to-r from-brand-yale to-brand-teal bg-clip-text text-transparent">
-                  ÁgilEscalado (P03)
-                </span>
-              </div>
-              <div className="hidden md:block">
-                <div className="ml-10 flex items-baseline space-x-4">
-                  <Link
-                    href="/dashboard"
-                    className="text-brand-graphite hover:text-brand-yale px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-brand-alabaster/50"
-                  >
-                    Panel Operativo
-                  </Link>
-                  <Link
-                    href="/dashboard/integrations"
-                    className="text-brand-graphite hover:text-brand-yale px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-brand-alabaster/50"
-                  >
-                    Mapa de Integraciones
-                  </Link>
-                </div>
-              </div>
-            </div>
-            
-            {/* User Profile / Status Mock */}
-            <div className="hidden md:block">
-              <div className="ml-4 flex items-center md:ml-6">
-                <div className="relative p-1 rounded-full text-brand-teal focus:outline-none">
-                  <span className="sr-only">Estado del Sistema</span>
-                  <div className="h-3 w-3 rounded-full bg-green-500 animate-pulse"></div>
-                </div>
-                <span className="ml-2 text-sm font-medium text-brand-graphite/80">Sistema En Línea</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </nav>
+  // Estado que controla si el modo oscuro está activo o no
+  const [isDark, setIsDark] = useState(false);
 
-      {/* Contenido Principal */}
-      <main>
-        {children}
+  return (
+    // El fondo principal cambia fluidamente entre Alabaster y Graphite
+    <div className={`min-h-screen flex transition-colors duration-500 ${isDark ? 'bg-[#353535]' : 'bg-[#D9D9D9]'}`}>
+      
+      {/* La Barra Lateral es independiente y mantiene su diseño original */}
+      <Sidebar />
+      
+      <main className="flex-1 ml-64 transition-all duration-300 relative">
+        
+        {/* Botón Flotante Premium */}
+        <button 
+          onClick={() => setIsDark(!isDark)}
+          className="absolute top-6 right-8 z-50 bg-[#3C6E71] hover:bg-[#284B63] text-white px-5 py-2.5 rounded-full shadow-lg font-bold text-sm flex items-center gap-2 transition-all duration-300 border border-white/20 hover:scale-105"
+        >
+          {isDark ? 'Modo Claro' : 'Modo Oscuro'}
+        </button>
+
+        {/* Contenedor dinámico: Si está oscuro, activa una clase mágica */}
+        <div className={isDark ? 'tema-oscuro' : ''}>
+          {children}
+        </div>
+        
       </main>
     </div>
   );

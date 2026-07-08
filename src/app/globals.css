@@ -36,3 +36,86 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
 }
+
+/* =========================================
+   MODO OSCURO
+   ========================================= */
+
+/* 1. Tarjetas Principales (KPIs, Tarjetas Kanban, Tabla) */
+.tema-oscuro .bg-brand-white,
+.tema-oscuro .bg-white\/80,
+.tema-oscuro .bg-white\/70 {
+  background-color: #284B63 !important; /* Yale Blue */
+  border-color: #3C6E71 !important; /* Stormy Teal */
+}
+
+/* 2. Textos Generales (para que no queden invisibles) */
+.tema-oscuro .text-brand-yale,
+.tema-oscuro .text-brand-graphite,
+.tema-oscuro .text-brand-graphite\/70,
+.tema-oscuro .text-brand-graphite\/60,
+.tema-oscuro .text-brand-graphite\/50 {
+  color: #D9D9D9 !important; /* Alabaster */
+}
+
+/* 3. Textos que deben destacar (Métricas y Títulos) */
+.tema-oscuro h1, 
+.tema-oscuro .text-3xl.text-brand-yale {
+  color: #FFFFFF !important;
+}
+.tema-oscuro .text-brand-teal {
+  color: #4FD1C5 !important; /* Teal más brillante para buen contraste */
+}
+.tema-oscuro .text-red-600 {
+  color: #F87171 !important; /* Rojo más brillante para buen contraste */
+}
+
+/* 4. Botones Activos (Ej: el botón "Kanban" que quedó invisible) */
+.tema-oscuro .bg-brand-white.text-brand-yale {
+  background-color: #3C6E71 !important; 
+  color: #FFFFFF !important;
+  border-color: #3C6E71 !important;
+}
+
+/* 5. Cabeceras de las columnas Kanban (Apagamos los tonos pastel) */
+.tema-oscuro [class*="bg-blue-100"],
+.tema-oscuro [class*="bg-indigo-100"],
+.tema-oscuro [class*="bg-cyan-100"],
+.tema-oscuro [class*="bg-brand-teal/20"],
+.tema-oscuro [class*="bg-amber-100"],
+.tema-oscuro [class*="bg-green-100"],
+.tema-oscuro [class*="bg-gray-200"],
+.tema-oscuro [class*="bg-red-100"] {
+   background-color: #1A3141 !important; /* Azul nocturno oscuro */
+   border-bottom: 1px solid #3C6E71 !important;
+}
+
+/* 6. Textos de las cabeceras Kanban */
+.tema-oscuro [class*="text-blue-800"],
+.tema-oscuro [class*="text-indigo-800"],
+.tema-oscuro [class*="text-cyan-800"],
+.tema-oscuro [class*="text-amber-800"],
+.tema-oscuro [class*="text-green-800"],
+.tema-oscuro [class*="text-gray-800"],
+.tema-oscuro [class*="text-red-800"] {
+   color: #FFFFFF !important;
+}
+
+/* 7. Fondo de las columnas del Kanban (Cuerpo) */
+.tema-oscuro [class*="bg-blue-50"],
+.tema-oscuro [class*="bg-indigo-50"],
+.tema-oscuro [class*="bg-cyan-50"],
+.tema-oscuro [class*="bg-brand-teal/10"],
+.tema-oscuro [class*="bg-amber-50"],
+.tema-oscuro [class*="bg-green-50"],
+.tema-oscuro [class*="bg-gray-50"],
+.tema-oscuro [class*="bg-red-50"] {
+   background-color: rgba(40, 75, 99, 0.2) !important; /* Yale Blue semi-transparente */
+}
+
+/* 8. Numeritos de conteo en el Kanban (Los círculos) */
+.tema-oscuro .bg-white\/60 {
+   background-color: #3C6E71 !important;
+   color: #FFFFFF !important;
+   border: none !important;
+}
