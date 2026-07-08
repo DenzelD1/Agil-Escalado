@@ -1,10 +1,13 @@
+'use client';
+
 import { type NormalizedOrder } from '@/lib/normalizers/orderNormalizer';
 
 interface OrdersTableProps {
   orders: NormalizedOrder[];
+  onOrderClick?: (order: NormalizedOrder) => void;
 }
 
-export default function OrdersTable({ orders }: OrdersTableProps) {
+export default function OrdersTable({ orders, onOrderClick }: OrdersTableProps) {
   if (orders.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-12 bg-white/60 backdrop-blur-md rounded-xl shadow-sm border border-brand-alabaster transition-all duration-300">
@@ -35,7 +38,6 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
     switch (status) {
       case 'creado':
       case 'procesando':
-        // Aquí aplicamos la micro-animación (Punto parpadeante / Pulse effect)
         return (
           <span className="inline-flex items-center gap-1.5 bg-blue-50/80 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-full border border-blue-200 shadow-sm">
             <span className="relative flex h-2 w-2">
@@ -74,7 +76,7 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
         <tbody>
           {orders.map((order) => (
             // Aplicamos Hover Effects: hover:bg-white transition-all duration-300
-            <tr key={order.id_pedido} className="border-b border-brand-alabaster/50 hover:bg-white hover:shadow-sm transition-all duration-300 cursor-default group">
+            <tr key={order.id_pedido} onClick={() => onOrderClick?.(order)} className="border-b border-brand-alabaster/50 hover:bg-white hover:shadow-sm transition-all duration-300 cursor-pointer group">
               <td className="px-6 py-4 font-medium whitespace-nowrap text-brand-yale group-hover:text-brand-teal transition-colors">
                 {order.id_canal}
               </td>

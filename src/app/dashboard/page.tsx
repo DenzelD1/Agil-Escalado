@@ -1,11 +1,10 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import OrderFilters from './OrderFilters';
-import OrdersTable from './OrdersTable';
-import OrderKanbanBoard from './OrderKanbanBoard';
 import { prisma } from '@/lib/prisma';
 import { type NormalizedOrder } from '@/lib/normalizers/orderNormalizer';
 import AutoRefresh from './AutoRefresh';
+import DashboardClient from './DashboardClient';
 
 interface DashboardProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -32,6 +31,7 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
       cliente: true,
       direccionEnvio: true, 
       items: true,
+      stockReservations: true,
     },
     orderBy: {
       recibidoEn: 'desc',
@@ -68,6 +68,13 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
     impuestos: order.impuestos,
     total: order.total,
     estado: order.estado.toLowerCase() as any,
+    intentosPago: order.intentosPago,
+    motivoRechazo: order.motivoRechazo,
+    stockReservations: order.stockReservations.map(r => ({
+      reservaId: r.reservaId,
+      sku: r.sku,
+      cantidad: r.cantidad,
+    })),
   }));
 
   // 3. Aplicar filtros
@@ -92,7 +99,7 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-brand-yale">Panel Operativo</h1>
             <p className="text-brand-graphite/70 mt-1">
-              Gestión centralizada de pedidos omnicanal. Conectado a PostgreSQL.
+              Gestión centralizada de pedidos omnicanal. Datos en tiempo real desde PostgreSQL (Neon).
             </p>
           </div>
 
@@ -143,11 +150,7 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
         </div>
 
         <div className="animate-in fade-in duration-300">
-          {view === 'kanban' ? (
-            <OrderKanbanBoard orders={filteredOrders} />
-          ) : (
-            <OrdersTable orders={filteredOrders} />
-          )}
+          <DashboardClient orders={filteredOrders} view={view} />
         </div>
       </div>
     </div>

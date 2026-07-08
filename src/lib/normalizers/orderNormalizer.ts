@@ -22,6 +22,12 @@ export interface NormalizedOrder extends OrderType {
   id_pedido: string;
   /** Timestamp ISO 8601 de recepción del pedido */
   recibido_en: string;
+  /** Número de intentos de pago */
+  intentosPago: number;
+  /** Motivo del rechazo, si aplica */
+  motivoRechazo: string | null;
+  /** Reservas de stock asociadas */
+  stockReservations: { reservaId: string; sku: string; cantidad: number }[];
 }
 
 /**
