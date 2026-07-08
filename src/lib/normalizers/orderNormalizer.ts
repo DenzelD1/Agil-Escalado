@@ -146,6 +146,9 @@ export function normalizeOrder(
     total,
     estado: initialOrderState,
     prioridad,
+    intentosPago: 0,
+    motivoRechazo: null,
+    stockReservations: [],
   };
 }
 
