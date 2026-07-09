@@ -36,6 +36,7 @@ enum OrderChannel {
   WEB
   MOBILE
   CALLCENTER
+  INTERNAL
 }
 
 // ============================================================================
