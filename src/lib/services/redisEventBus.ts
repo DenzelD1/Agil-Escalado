@@ -58,13 +58,49 @@ export async function publishOrderStateChange(
 }
 
 export async function closeRedisConnection(): Promise<void> {
-  if (!redisClient) {
-    return;
+  if (redisClient) {
+    try {
+      await redisClient.disconnect();
+    } finally {
+      redisClient = null;
+    }
   }
+}
 
-  try {
-    await redisClient.disconnect();
-  } finally {
-    redisClient = null;
-  }
+/**
+ * Creates a dedicated Redis client for subscribing (since a client in SUBSCRIBE mode cannot issue other commands).
+ * Note: The caller is responsible for disconnecting this client when done.
+ */
+export async function subscribeToOrderStateChanges(
+  onMessage: (event: OrderStateChangeEvent) => void
+): Promise<RedisClientType> {
+  const subscriberClient = createClient({
+    url: getRedisUrl(),
+    socket: {
+      connectTimeout: 5000,
+      reconnectStrategy: (retries) => {
+        if (retries > 3) {
+          return new Error('Max retries reached for Redis connection');
+        }
+        return Math.min(retries * 50, 500);
+      },
+    },
+  });
+
+  subscriberClient.on('error', (error: Error) => {
+    console.error('[RedisEventBus] Subscriber client error:', error.message);
+  });
+
+  await subscriberClient.connect();
+
+  await subscriberClient.subscribe(getRedisChannel(), (message) => {
+    try {
+      const event = JSON.parse(message) as OrderStateChangeEvent;
+      onMessage(event);
+    } catch (err) {
+      console.error('[RedisEventBus] Error parsing subscribed message:', err);
+    }
+  });
+
+  return subscriberClient as RedisClientType;
 }

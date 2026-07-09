@@ -3,8 +3,11 @@ import Link from 'next/link';
 import OrderFilters from './OrderFilters';
 import { prisma } from '@/lib/prisma';
 import { type NormalizedOrder } from '@/lib/normalizers/orderNormalizer';
-import AutoRefresh from './AutoRefresh';
+import LiveOrderUpdates from './LiveOrderUpdates';
 import DashboardClient from './DashboardClient';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 interface DashboardProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -50,8 +53,8 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
       id_pedido: order.id,
       recibido_en: order.recibidoEn.toISOString(),
       id_canal: order.idCanal,
-      tipo_canal: order.tipoCanal.toLowerCase() as any,
-      prioridad: (order.prioridad === 'URGENTE' ? 'alta' : order.prioridad.toLowerCase()) as any,
+      tipo_canal: order.tipoCanal.toLowerCase() as NormalizedOrder['tipo_canal'],
+      prioridad: (order.prioridad === 'URGENTE' ? 'alta' : order.prioridad.toLowerCase()) as NormalizedOrder['prioridad'],
       cliente: {
         nombre: order.cliente?.nombre || 'Desconocido',
         email: order.cliente?.email || '',
@@ -61,10 +64,15 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
         calle: order.direccionEnvio.calle,
         numero: order.direccionEnvio.numero,
         ciudad: order.direccionEnvio.ciudad,
-        region: order.direccionEnvio.region || '',
-        codigo_postal: order.direccionEnvio.codigoPostal || '',
+        region: order.direccionEnvio.region || undefined,
+        codigo_postal: order.direccionEnvio.codigoPostal || undefined,
         pais: order.direccionEnvio.pais,
-      } : {} as any,
+      } : {
+        calle: 'S/N',
+        numero: 'S/N',
+        ciudad: 'Desconocida',
+        pais: 'CHILE'
+      },
       items: order.items.map(item => ({
         sku: item.sku,
         cantidad: item.cantidad,
@@ -74,7 +82,7 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
       subtotal: order.subtotal,
       impuestos: order.impuestos,
       total: order.total,
-      estado: mappedEstado as any,
+      estado: mappedEstado as NormalizedOrder['estado'],
       intentosPago: order.intentosPago,
       motivoRechazo: order.motivoRechazo,
       stockReservations: order.stockReservations.map(r => ({
@@ -101,7 +109,7 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
 
   return (
     <div className="p-6 md:p-10">
-      <AutoRefresh interval={5000} />
+      <LiveOrderUpdates />
       <div className="max-w-7xl mx-auto">
         <header className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>
