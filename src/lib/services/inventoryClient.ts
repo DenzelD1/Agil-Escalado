@@ -1,5 +1,5 @@
 const INVENTARIO_URL = () => {
-  const url = process.env.API_INVENTARIO_URL;
+  const url = process.env.API_INVENTARIO_URL || 'https://proyectogestordeinventario-production.up.railway.app';
   if (!url) {
     throw new Error('API_INVENTARIO_URL no está configurada en las variables de entorno');
   }
@@ -82,7 +82,7 @@ export async function confirmReservation(
   orderId: string,
   token: string,
 ): Promise<void> {
-  const apiKey = process.env.EXTERNAL_API_KEY || '';
+  const apiKey = process.env.EXTERNAL_API_KEY || 'grupo5-dev-key-2026';
   const res = await fetch(`${INVENTARIO_URL()}/api/v1/external/payment-confirmed`, {
     method: 'POST',
     headers: {
