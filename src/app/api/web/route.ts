@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/middlewares/rateLimiter';
 import { verifyJwt } from '@/lib/jwt';
+import { validateApiKey, createAuthResponse } from '@/lib/auth';
 import { processIncomingOrder } from '@/lib/services/orderOrchestrator';
 
 export async function POST(request: Request) {
@@ -14,12 +15,12 @@ export async function POST(request: Request) {
       );
     }
 
+    const apiKeyResponse = validateApiKey(request);
+    if (apiKeyResponse) return apiKeyResponse;
+
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'No autorizado. Faltan credenciales.' },
-        { status: 401 },
-      );
+      return createAuthResponse();
     }
 
     const token = authHeader.split(' ')[1];

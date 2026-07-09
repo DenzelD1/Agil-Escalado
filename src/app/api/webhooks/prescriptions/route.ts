@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
+import { validateApiKey } from '@/lib/auth';
 import { processIncomingOrder } from '@/lib/services/orderOrchestrator';
 
 export async function POST(request: Request) {
   try {
-    // Verificamos autorización
+    const apiKeyResponse = validateApiKey(request);
+    if (apiKeyResponse) return apiKeyResponse;
+
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
