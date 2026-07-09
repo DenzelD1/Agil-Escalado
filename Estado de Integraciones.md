@@ -24,6 +24,7 @@ Otros proyectos necesitan enviarnos información (ej. avisarnos que un pago pas�
 
 | Proyecto | Lo que esperan de nosotros | Estado actual | ¿Qué nos falta informarles/pedirles? |
 | :--- | :--- | :--- | :--- |
+| **P01 (Atención)** | Generar orden de repuestos para mantenimiento (Webhook). | 🟢 Completo. Habilitamos el webhook `/api/webhooks/maintenance` y el contrato. | Nada, ya creamos el contrato `CONTRATO_API_MANTENIMIENTO.md`. |
 | **P07 (CRM)** | Consultar información de un pedido. | 🟢 Completo. Ya les dimos el endpoint `GET /api/orders/{id}` y su API Key (`P07_API_KEY`). | Nada, ya se lo enviamos. |
 | **P04 (Pagos)** | Avisarnos si un pago fue exitoso o rechazado (Webhook). | 🟢 Completo. Habilitamos `P04_API_KEY` en el middleware y validamos su JSON contra nuestro webhook (`/api/webhooks/payment`). | Ninguna acción requerida. Ya confirmamos la estructura del JSON (ya es compatible). |
 | **P02 (Logística)** | Avisarnos cuando el pedido cambia de estado en tránsito o entregado (Webhook). | 🟢 **Simulado**. Este proyecto no fue asignado, así que no nos harán peticiones externas de webhook. | Ninguna acción requerida. |

@@ -44,6 +44,15 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  // Bypass para P01 y validación de tokens compartidos
+  if (token === process.env.P01_SHARED_TOKEN) {
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('x-user-roles', JSON.stringify(['sistema-externo']));
+    return NextResponse.next({
+      request: { headers: requestHeaders },
+    });
+  }
+
   if (!token) {
     return NextResponse.json(
       { error: 'No autorizado: Token faltante' },
