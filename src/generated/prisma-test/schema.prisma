@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma-test"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// --- Reuse the same data model as the main schema ---
+// Note: keep in sync with prisma/schema.prisma
+
+model Client {
+  id        String   @id @default(uuid())
+  nombre    String
+  email     String   @unique
+  telefono  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders    Order[]
+  addresses Address[]
+}
+
+model Address {
+  id               String  @id @default(uuid())
+  calle            String
+  numero           String
+  ciudad           String
+  region           String?
+  codigoPostal     String?
+  pais             String  @default("CHILE")
+  notasAdicionales String?
+
+  clienteId String?
+  cliente   Client? @relation(fields: [clienteId], references: [id])
+
+  orders Order[]
+}
+
+model Order {
+  id            String   @id @default(uuid())
+  idCanal       String
+  tipoCanal     String
+  estado        String   @default("creado")
+  prioridad     String   @default("media")
+  subtotal      Float
+  impuestos     Float
+  total         Float
+  agenteId      String?
+  intentosPago  Int      @default(0)
+  motivoRechazo String?
+  recibidoEn    DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  clienteId String
+  cliente   Client @relation(fields: [clienteId], references: [id])
+
+  direccionId String
+  direccion   Address @relation(fields: [direccionId], references: [id])
+
+  items             Item[]
+  stockReservations StockReservation[]
+}
+
+model Item {
+  id             String @id @default(uuid())
+  sku            String
+  cantidad       Int
+  precioUnitario Float
+  descuento      Float  @default(0)
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model StockReservation {
+  id        String   @id @default(uuid())
+  sku       String
+  cantidad  Int
+  reservaId String
+  createdAt DateTime @default(now())
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
