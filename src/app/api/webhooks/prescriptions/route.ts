@@ -13,9 +13,9 @@ export async function POST(request: Request) {
     }
     const token = authHeader.split(' ')[1];
 
-    let body: any;
+    let body: Record<string, unknown>;
     try {
-      body = await request.json();
+      body = await request.json() as Record<string, unknown>;
     } catch (e) {
       return NextResponse.json(
         { error: 'Cuerpo de la petición inválido o malformado' },
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
 
     // Adaptamos el payload de PrescriptionCreated al formato esperado
     // Soportamos si viene envuelto en 'payload' o si es directo
-    const payload = body.payload || body;
+    const payload = (body.payload as Record<string, unknown>) || body;
     
     // Añadimos flag explícito para bypass de pago y prioridad
     const orderData = {

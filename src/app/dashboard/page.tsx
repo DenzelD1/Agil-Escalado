@@ -39,43 +39,51 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
   });
 
   // 2. Mapear los datos y pasar los ENUMS a minúsculas para los colores
-  let filteredOrders: NormalizedOrder[] = dbOrders.map(order => ({
-    id_pedido: order.id,
-    recibido_en: order.recibidoEn.toISOString(),
-    id_canal: order.idCanal,
-    tipo_canal: order.tipoCanal.toLowerCase() as any,
-    prioridad: (order.prioridad === 'URGENTE' ? 'alta' : order.prioridad.toLowerCase()) as any,
-    cliente: {
-      nombre: order.cliente?.nombre || 'Desconocido',
-      email: order.cliente?.email || '',
-      telefono: order.cliente?.telefono || '',
-    },
-    direccion_envio: order.direccionEnvio ? {
-      calle: order.direccionEnvio.calle,
-      numero: order.direccionEnvio.numero,
-      ciudad: order.direccionEnvio.ciudad,
-      region: order.direccionEnvio.region || '',
-      codigo_postal: order.direccionEnvio.codigoPostal || '',
-      pais: order.direccionEnvio.pais,
-    } : {} as any,
-    items: order.items.map(item => ({
-      sku: item.sku,
-      cantidad: item.cantidad,
-      precio_unitario: item.precioUnitario,
-      descuento: item.descuento,
-    })),
-    subtotal: order.subtotal,
-    impuestos: order.impuestos,
-    total: order.total,
-    estado: order.estado.toLowerCase() as any,
-    intentosPago: order.intentosPago,
-    motivoRechazo: order.motivoRechazo,
-    stockReservations: order.stockReservations.map(r => ({
-      reservaId: r.reservaId,
-      sku: r.sku,
-      cantidad: r.cantidad,
-    })),
-  }));
+  let filteredOrders: NormalizedOrder[] = dbOrders.map(order => {
+    let mappedEstado = order.estado.toLowerCase();
+    // Mapeo de compatibilidad para pedidos creados antes del ajuste de Kanban
+    if (mappedEstado === 'procesando' || mappedEstado === 'confirmado') mappedEstado = 'verificado';
+    if (mappedEstado === 'enviado') mappedEstado = 'en_transito';
+    if (mappedEstado === 'error') mappedEstado = 'rechazado';
+
+    return {
+      id_pedido: order.id,
+      recibido_en: order.recibidoEn.toISOString(),
+      id_canal: order.idCanal,
+      tipo_canal: order.tipoCanal.toLowerCase() as any,
+      prioridad: (order.prioridad === 'URGENTE' ? 'alta' : order.prioridad.toLowerCase()) as any,
+      cliente: {
+        nombre: order.cliente?.nombre || 'Desconocido',
+        email: order.cliente?.email || '',
+        telefono: order.cliente?.telefono || '',
+      },
+      direccion_envio: order.direccionEnvio ? {
+        calle: order.direccionEnvio.calle,
+        numero: order.direccionEnvio.numero,
+        ciudad: order.direccionEnvio.ciudad,
+        region: order.direccionEnvio.region || '',
+        codigo_postal: order.direccionEnvio.codigoPostal || '',
+        pais: order.direccionEnvio.pais,
+      } : {} as any,
+      items: order.items.map(item => ({
+        sku: item.sku,
+        cantidad: item.cantidad,
+        precio_unitario: item.precioUnitario,
+        descuento: item.descuento,
+      })),
+      subtotal: order.subtotal,
+      impuestos: order.impuestos,
+      total: order.total,
+      estado: mappedEstado as any,
+      intentosPago: order.intentosPago,
+      motivoRechazo: order.motivoRechazo,
+      stockReservations: order.stockReservations.map(r => ({
+        reservaId: r.reservaId,
+        sku: r.sku,
+        cantidad: r.cantidad,
+      })),
+    };
+  });
 
   // 3. Aplicar filtros
   if (canalFilter) {
